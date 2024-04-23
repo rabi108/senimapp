@@ -1,0 +1,16 @@
+[
+  {
+    "id": "585069a9ee19ad271e9b6c53",
+    "google_id": 1009806,
+    "google_parent_id": 2398,
+    "name": "Astana",
+    "canonical_name": "Astana,Kazakhstan",
+    "country_code": "KZ",
+    "target_type": "City",
+    "reach": 1060000,
+    "gps": [
+      71.4703558,
+      51.16052269999999
+    ]
+  }
+]
