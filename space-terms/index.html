@@ -1,0 +1,1429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Senim Space Terms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Golos+Text:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one-screen app. Launcher icon -> sign-in -> setup quiz -> course map rail + tutor chat. */
+:root {
+  --bg: #edf0f6;
+  --surface: #ffffff;
+  --surface-2: #f5f7fb;
+  --ink: #16213a;
+  --ink-2: #56627d;
+  --line: #d6dce8;
+  --accent: #d9661f;      /* the sun */
+  --accent-soft: #fbe7da;
+  --accent-ink: #ffffff;
+  --sky: #2f6fd6;         /* Earth */
+  --sky-soft: #e1ebfb;
+  --shade: #1d2744;       /* night side, shadows */
+  --soc: #11796f;         /* "think it through" turns */
+  --soc-soft: #dcf1ee;
+  --good: #23824f;
+  --good-soft: #dff2e6;
+  --bad: #c0392f;
+  --bad-soft: #fbe3e1;
+  --gold: #c7951a;
+  --font-display: "Unbounded", "Golos Text", system-ui, sans-serif;
+  --font-body: "Golos Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --r: 14px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1324; --surface: #151d35; --surface-2: #1b2442; --ink: #e8edf8; --ink-2: #a0abc6; --line: #2a3556;
+    --accent: #f08a45; --accent-soft: #3a2a22; --accent-ink: #1a1206; --sky: #74a5ff; --sky-soft: #1d2b4d; --shade: #070b16;
+    --soc: #42c6b6; --soc-soft: #133a39; --good: #55c98f; --good-soft: #15352a; --bad: #f27a70; --bad-soft: #3d1f22; --gold: #e8b84a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1324; --surface: #151d35; --surface-2: #1b2442; --ink: #e8edf8; --ink-2: #a0abc6; --line: #2a3556;
+  --accent: #f08a45; --accent-soft: #3a2a22; --accent-ink: #1a1206; --sky: #74a5ff; --sky-soft: #1d2b4d; --shade: #070b16;
+  --soc: #42c6b6; --soc-soft: #133a39; --good: #55c98f; --good-soft: #15352a; --bad: #f27a70; --bad-soft: #3d1f22; --gold: #e8b84a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--font-body); }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+[hidden] { display: none !important; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; text-wrap: balance; margin: 0; line-height: 1.2; }
+.label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
+
+/* ---------- screens ---------- */
+.screen { min-height: 100%; display: grid; place-items: center; padding-block: 32px; padding-inline: 16px; }
+.panel { width: 100%; max-width: 440px; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 28px; display: grid; gap: 18px; }
+
+/* launcher */
+#home { background: radial-gradient(circle at 50% 35%, var(--sky-soft), var(--bg) 60%); }
+.launcher { display: grid; justify-items: center; gap: 14px; }
+.app-icon { width: 112px; height: 112px; border: 0; padding: 0; border-radius: 28px; background: none; transition: transform .2s; }
+.app-icon:hover { transform: translateY(-3px) scale(1.03); }
+.app-icon svg { width: 100%; height: 100%; display: block; border-radius: 28px; box-shadow: 0 10px 30px rgb(0 0 0 / .18); }
+.launcher .name { font-family: var(--font-display); font-size: 15px; }
+.launcher .hint { color: var(--ink-2); font-size: 14px; }
+
+/* forms */
+.field { display: grid; gap: 6px; }
+.field label { font-weight: 600; font-size: 14px; }
+.field input { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font: inherit; }
+.btn { border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 600; background: var(--accent); color: var(--accent-ink); }
+.btn:hover { filter: brightness(1.05); }
+.btn.secondary { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
+.err { color: var(--bad); font-size: 14px; min-height: 1.2em; margin: 0; }
+.demo { font-size: 13px; color: var(--ink-2); background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+.demo table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.demo td { padding: 2px 6px 2px 0; }
+.demo code { font-size: 13px; color: var(--ink); }
+
+/* setup quiz */
+.dots { display: flex; gap: 6px; }
+.dots i { width: 28px; height: 5px; border-radius: 3px; background: var(--line); }
+.dots i.on { background: var(--accent); }
+.opts { display: grid; gap: 10px; }
+.opt { text-align: left; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); }
+.opt:hover { border-color: var(--accent); }
+.opt .big { font-family: var(--font-display); font-size: 18px; display: block; }
+.opt small { color: var(--ink-2); }
+.quote { margin: 0; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 10px 10px 0; font-style: italic; }
+.summary { display: grid; gap: 8px; }
+.summary div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); }
+
+/* ---------- app shell ---------- */
+#app { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+header.bar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 16px; margin-right: auto; }
+.brand svg { width: 34px; height: 34px; border-radius: 9px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pill.xp { background: var(--accent-soft); border-color: transparent; }
+.pill.combo { background: var(--soc-soft); color: var(--soc); border-color: transparent; }
+.menu-btn { display: none; border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 6px 10px; }
+.main { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 0; }
+aside.rail { border-right: 1px solid var(--line); background: var(--surface); overflow-y: auto; padding: 18px 16px; display: grid; gap: 22px; align-content: start; }
+.me { display: grid; gap: 8px; }
+.me .who { font-weight: 700; font-size: 17px; }
+.me .rank { color: var(--ink-2); font-size: 14px; }
+.meter { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
+.meter b { display: block; height: 100%; background: var(--accent); width: 0; transition: width .4s; }
+.lessons { display: grid; gap: 8px; }
+.lesson { display: grid; grid-template-columns: 36px 1fr; gap: 10px; align-items: center; text-align: left; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); }
+.lesson:hover:not(:disabled) { border-color: var(--accent); }
+.lesson:disabled { opacity: .55; cursor: not-allowed; }
+.lesson.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.lesson .num { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-size: 14px; background: var(--surface); border: 1px solid var(--line); }
+.lesson.done .num { background: var(--good); color: var(--surface); border-color: transparent; }
+.lesson .t { font-weight: 600; line-height: 1.25; }
+.lesson .s { font-size: 13px; color: var(--ink-2); }
+.stars { color: var(--gold); letter-spacing: 1px; font-size: 13px; }
+.stars .off { color: var(--line); }
+.balance { display: grid; gap: 6px; font-size: 13px; color: var(--ink-2); }
+.balance .split { display: flex; height: 10px; border-radius: 5px; overflow: hidden; }
+.balance .split .a { background: var(--soc); }
+.balance .split .b { background: var(--sky); }
+.balance .keys { display: flex; justify-content: space-between; gap: 8px; font-variant-numeric: tabular-nums; }
+.badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.badge { display: grid; justify-items: center; gap: 2px; width: 74px; text-align: center; font-size: 11px; color: var(--ink-2); }
+.badge svg { width: 46px; height: 46px; }
+.badge.off svg { opacity: .25; filter: grayscale(1); }
+.settings { display: grid; gap: 8px; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { flex: 1; border: 0; background: var(--surface-2); padding: 7px 4px; font-size: 13px; }
+.seg button.on { background: var(--ink); color: var(--surface); }
+.linkish { background: none; border: 0; padding: 0; color: var(--sky); text-decoration: underline; font-size: 14px; justify-self: start; }
+
+/* chat */
+.chatwrap { display: grid; grid-template-rows: 1fr auto; min-height: 0; }
+#chat { overflow-y: auto; padding: 22px 16px 12px; display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth; }
+.msg { display: flex; max-width: 720px; width: 100%; margin-inline: auto; }
+.msg.me { justify-content: flex-end; }
+.bubble { max-width: min(560px, 92%); padding: 12px 15px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; }
+.msg.tutor .bubble { border-top-left-radius: 4px; }
+.msg.me .bubble { background: var(--ink); color: var(--surface); border-color: transparent; border-top-right-radius: 4px; }
+.msg.sys { justify-content: center; }
+.msg.sys .bubble { background: none; border: 0; color: var(--ink-2); font-size: 13px; text-align: center; padding: 4px; }
+.lesson-head { text-align: center; display: grid; gap: 4px; padding: 10px 0 2px; }
+.lesson-head h2 { font-size: 20px; }
+.lesson-head p { margin: 0; color: var(--ink-2); font-size: 14px; }
+.tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; margin-bottom: 6px; }
+.tag-soc { background: var(--soc-soft); color: var(--soc); }
+.tag-dir { background: var(--sky-soft); color: var(--sky); }
+.tag-game { background: var(--accent-soft); color: var(--accent); }
+.tag-check { background: var(--good-soft); color: var(--good); }
+.tag-ask { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+.bubble p { margin: 0 0 8px; }
+.bubble p:last-child { margin: 0; }
+.bubble cite { display: block; margin-top: 8px; font-style: normal; font-size: 12px; color: var(--ink-2); }
+.typing { display: flex; gap: 5px; padding: 14px 16px; }
+.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-2); animation: blink 1s infinite; }
+.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes blink { 0%, 100% { opacity: .25 } 50% { opacity: 1 } }
+
+.choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.choice { border: 1px solid var(--accent); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 7px 14px; font-size: 15px; text-align: left; }
+.choice:hover:not(:disabled) { background: var(--accent-soft); }
+.choice.ghost { border-style: dashed; border-color: var(--ink-2); color: var(--ink-2); }
+.choice:disabled { opacity: .5; cursor: default; }
+.choice.picked { opacity: 1; background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.choice.struck { text-decoration: line-through; }
+
+/* term chip + popover */
+.term { border: 0; background: none; padding: 0; font-weight: 700; color: var(--accent); border-bottom: 2px dotted var(--accent); position: relative; cursor: help; }
+.term.show::after { content: attr(data-tr); position: absolute; left: 0; bottom: calc(100% + 6px); white-space: nowrap; background: var(--ink); color: var(--surface); font-weight: 600; font-size: 13px; padding: 4px 8px; border-radius: 6px; z-index: 5; }
+.trn { color: var(--soc); font-size: .9em; font-weight: 600; }
+
+/* term card */
+.tcard { margin-top: 4px; border: 2px solid var(--accent); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; background: var(--surface); }
+.tc-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.tc-word { font-family: var(--font-display); font-size: 24px; color: var(--accent); }
+.tc-pos { color: var(--ink-2); font-size: 13px; font-style: italic; }
+.say { margin-left: auto; border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; font-size: 13px; padding: 3px 10px; }
+.tc-def { margin: 0; font-size: 17px; }
+.tc-forms { margin: 0; font-size: 14px; color: var(--ink-2); }
+.tcard blockquote { margin: 0; padding: 8px 12px; background: var(--surface-2); border-radius: 8px; font-style: italic; font-size: 15px; }
+.tcard blockquote cite { font-style: normal; }
+.tc-tr { display: grid; gap: 2px; padding: 10px 12px; border-radius: 8px; background: var(--soc-soft); }
+.tc-tr .lang { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--soc); }
+.tc-tr strong { font-size: 18px; }
+
+.fig { margin: 10px 0 0; background: var(--surface-2); border-radius: 10px; padding: 8px; }
+.fig svg { width: 100%; height: auto; display: block; }
+.fig figcaption { font-size: 12px; color: var(--ink-2); text-align: center; }
+.s-sun { fill: var(--accent); }
+.s-earth { fill: var(--sky); }
+.s-moon { fill: var(--ink-2); }
+.s-shade { fill: var(--shade); opacity: .55; }
+.s-path { fill: none; stroke: var(--ink-2); stroke-width: 2; stroke-dasharray: 6 6; }
+.s-axis { stroke: var(--ink); stroke-width: 3; stroke-linecap: round; }
+.s-ray { stroke: var(--accent); stroke-width: 2; opacity: .6; }
+.s-arrow { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.s-lbl { fill: var(--ink); font: 600 14px var(--font-body); }
+.s-lbl2 { fill: var(--ink-2); font: 500 12px var(--font-body); }
+
+/* games */
+.game { margin-top: 10px; display: grid; gap: 12px; }
+.g-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.g-card { border: 2px dashed var(--line); border-radius: var(--r); padding: 18px 14px; text-align: center; font-size: 18px; font-weight: 600; min-height: 86px; display: grid; place-items: center; background: var(--surface-2); transition: background .2s, border-color .2s; }
+.g-card.good { border-color: var(--good); background: var(--good-soft); }
+.g-card.bad { border-color: var(--bad); background: var(--bad-soft); }
+.g-bins { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+.g-bin { border: 0; border-radius: 12px; padding: 14px 8px; font-family: var(--font-display); font-size: 14px; background: var(--ink); color: var(--surface); }
+.g-bin:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); }
+.g-bin:disabled { opacity: .5; }
+.g-why { font-size: 14px; color: var(--ink-2); min-height: 1.4em; margin: 0; }
+.g-progress { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.g-progress b { display: block; height: 100%; width: 0; background: var(--good); transition: width .3s; }
+.slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.slot { border: 2px dashed var(--line); border-radius: 12px; min-height: 64px; background: var(--surface-2); display: grid; place-items: center; font-weight: 700; }
+.slot.filled { border-style: solid; border-color: var(--ink-2); }
+.slot .pos { font-size: 11px; color: var(--ink-2); font-weight: 500; }
+.tokens { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.token { border: 0; border-radius: 999px; padding: 8px 16px; font-weight: 700; }
+.token.sun { background: var(--accent); color: var(--accent-ink); }
+.token.moon { background: var(--ink-2); color: var(--surface); }
+.token.earth { background: var(--sky); color: var(--surface); }
+.token:disabled { opacity: .3; }
+.mem { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+.mcard { min-height: 72px; border-radius: 12px; border: 0; padding: 8px; font-weight: 700; background: var(--ink); color: var(--ink); position: relative; }
+.mcard::before { content: "?"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--surface); font-family: var(--font-display); font-size: 22px; }
+.mcard.up, .mcard.ok { background: var(--surface-2); border: 2px solid var(--accent); }
+.mcard.up::before, .mcard.ok::before { content: none; }
+.mcard.ok { border-color: var(--good); background: var(--good-soft); }
+.mcard span { visibility: hidden; }
+.mcard.up span, .mcard.ok span { visibility: visible; }
+
+/* composer */
+.composer { border-top: 1px solid var(--line); background: var(--surface); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); }
+.composer form { max-width: 720px; margin-inline: auto; display: flex; gap: 8px; }
+.composer input { flex: 1; min-width: 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font: inherit; }
+.composer .mode { max-width: 720px; margin: 0 auto 6px; font-size: 12px; color: var(--ink-2); }
+
+/* overlays */
+.overlay { position: fixed; inset: 0; background: rgb(8 12 24 / .55); display: grid; place-items: center; padding: 16px; z-index: 30; }
+.modal { width: 100%; max-width: 420px; background: var(--surface); border-radius: 22px; padding: 26px; display: grid; gap: 14px; justify-items: center; text-align: center; }
+.modal svg { width: 110px; height: 110px; }
+.modal.wide { max-width: 640px; justify-items: stretch; text-align: left; max-height: 86vh; overflow: hidden; grid-template-rows: auto auto 1fr auto; }
+.gloss-list { overflow-y: auto; display: grid; gap: 10px; padding-right: 4px; }
+.gl { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 4px; }
+.gl .w { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.gl .w b { font-family: var(--font-display); font-size: 16px; color: var(--accent); }
+.gl .tr { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 14px; }
+.gl .tr span:nth-child(odd) { color: var(--ink-2); font-weight: 600; font-size: 12px; padding-top: 2px; }
+.gl.pref-kk .kk, .gl.pref-ru .ru { font-weight: 700; color: var(--soc); }
+.toast { position: fixed; right: 16px; bottom: 90px; background: var(--ink); color: var(--surface); padding: 8px 14px; border-radius: 999px; font-weight: 700; z-index: 40; animation: pop .25s ease-out; }
+@keyframes pop { from { transform: translateY(8px); opacity: 0 } to { transform: none; opacity: 1 } }
+
+@media (max-width: 820px) {
+  .main { grid-template-columns: minmax(0, 1fr); }
+  aside.rail { position: fixed; z-index: 20; top: 0; bottom: 0; left: 0; width: min(320px, 88vw); transform: translateX(-105%); transition: transform .25s; padding-top: calc(18px + env(safe-area-inset-top, 0px)); box-shadow: 0 0 40px rgb(0 0 0 / .25); }
+  aside.rail.open { transform: none; }
+  .menu-btn { display: inline-block; }
+  .pill.rankpill { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ 1. Launcher ============ -->
+<section id="home" class="screen">
+  <div class="launcher">
+    <button class="app-icon" id="openApp" aria-label="Open Senim Space Terms">
+      <svg viewBox="0 0 112 112" aria-hidden="true">
+        <rect width="112" height="112" fill="#16213a"/>
+        <circle cx="86" cy="24" r="9" fill="#f08a45"/>
+        <ellipse cx="54" cy="62" rx="40" ry="14" fill="none" stroke="#f08a45" stroke-width="4" transform="rotate(-18 54 62)"/>
+        <circle cx="54" cy="62" r="22" fill="#4f8cf0"/>
+        <path d="M54 40 A22 22 0 0 1 54 84 Z" fill="#16213a" opacity=".45"/>
+        <circle cx="22" cy="28" r="2" fill="#fff"/><circle cx="92" cy="90" r="1.6" fill="#fff"/><circle cx="30" cy="94" r="1.4" fill="#fff"/>
+      </svg>
+    </button>
+    <div class="name">Senim Space Terms</div>
+    <div class="hint">Tap the icon to open</div>
+  </div>
+</section>
+
+<!-- ============ 2. Sign in ============ -->
+<section id="login" class="screen" hidden>
+  <form class="panel" id="loginForm" autocomplete="off">
+    <div>
+      <div class="label">Grade 7 · English</div>
+      <h1 style="font-size:24px;margin-top:4px">Sign in</h1>
+    </div>
+    <div class="field">
+      <label for="loginName">Login</label>
+      <input id="loginName" name="login" placeholder="e.g. aruzhan.7a" autocapitalize="none" spellcheck="false">
+    </div>
+    <div class="field">
+      <label for="loginCode">Sign-in code</label>
+      <input id="loginCode" name="code" inputmode="numeric" placeholder="4-digit code from your teacher" type="password">
+    </div>
+    <p class="err" id="loginErr" role="alert"></p>
+    <button class="btn" type="submit">Sign in</button>
+    <div class="demo">
+      <div class="label" style="margin-bottom:4px">Demo accounts</div>
+      <table>
+        <tr><td><code>aruzhan.7a</code></td><td><code>4821</code></td><td>student</td></tr>
+        <tr><td><code>daniyar.7b</code></td><td><code>1937</code></td><td>student</td></tr>
+        <tr><td><code>teacher</code></td><td><code>0000</code></td><td>all lessons unlocked</td></tr>
+      </table>
+    </div>
+  </form>
+</section>
+
+<!-- ============ 3. Setup quiz ============ -->
+<section id="quiz" class="screen" hidden>
+  <div class="panel" id="quizPanel"></div>
+</section>
+
+<!-- ============ 4. App ============ -->
+<section id="app" hidden>
+  <header class="bar">
+    <button class="menu-btn" id="menuBtn" aria-label="Open course map">Menu</button>
+    <div class="brand">
+      <svg viewBox="0 0 112 112" aria-hidden="true"><rect width="112" height="112" fill="#16213a"/><ellipse cx="54" cy="62" rx="40" ry="14" fill="none" stroke="#f08a45" stroke-width="6" transform="rotate(-18 54 62)"/><circle cx="54" cy="62" r="22" fill="#4f8cf0"/></svg>
+      <span>Senim</span>
+    </div>
+    <span class="pill combo" id="comboPill" hidden></span>
+    <span class="pill rankpill" id="rankPill"></span>
+    <span class="pill xp" id="xpPill">0 XP</span>
+  </header>
+  <div class="main">
+    <aside class="rail" id="rail">
+      <div class="me">
+        <div class="who" id="meName"></div>
+        <div class="rank" id="meRank"></div>
+        <div class="meter" aria-hidden="true"><b id="rankBar"></b></div>
+      </div>
+      <div style="display:grid;gap:8px">
+        <div class="label">Course · What's in Our Universe?</div>
+        <div class="lessons" id="lessonList"></div>
+      </div>
+      <div style="display:grid;gap:8px">
+        <div class="label">Badges</div>
+        <div class="badges" id="badgeList"></div>
+      </div>
+      <div class="balance" title="Share of tutor turns that ask you to think vs. turns that explain">
+        <div class="label">How I teach you</div>
+        <div class="split"><span class="a" id="balA"></span><span class="b" id="balB"></span></div>
+        <div class="keys"><span id="balAt">Think-it-through 0</span><span id="balBt">Explanations 0</span></div>
+      </div>
+      <div class="settings">
+        <div class="label">Glossary language</div>
+        <div class="seg" id="langSeg"><button data-v="kk">Қазақша</button><button data-v="ru">Русский</button></div>
+        <div class="label">English level</div>
+        <div class="seg" id="levelSeg"><button data-v="s">Starter</button><button data-v="m">Middle</button><button data-v="a">Advanced</button></div>
+        <button class="btn secondary" id="glossBtn">Open my glossary</button>
+        <button class="linkish" id="logoutBtn">Sign out</button>
+      </div>
+    </aside>
+    <div class="chatwrap">
+      <div id="chat" role="log" aria-live="polite"></div>
+      <div class="composer">
+        <div class="mode" id="composerMode">Ask me about the terms in our lessons.</div>
+        <form id="askForm">
+          <input id="askInput" placeholder="Ask a question, e.g. “What is an orbit?”" autocomplete="off" aria-label="Message">
+          <button class="btn" type="submit">Send</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="overlay" id="overlay" hidden></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   KNOWLEDGE BASE
+   Everything below comes only from the attached CKLA materials:
+   - Unit 7 Reader "What's in Our Universe?" Ch. 1-3 (pp. 6-31)
+   - Unit 7 Teacher Guide, Lessons 1-3 vocabulary
+   - Astronomy Read-Aloud Anthology, Lesson 1A glossary
+   ===================================================================== */
+const TERMS = {
+  orbit: { en: "orbit", pos: "noun / verb", lesson: "L1",
+    def: { s: "the curved path something in space takes around another object. Earth goes around the sun on its orbit.",
+           m: "the curved path something in space takes around another object in space. Planets move in an orbit around the sun." },
+    forms: "orbits, orbiting", ex: "All of these planets, including Earth, circle, or orbit, around the sun.", src: "Reader, Ch. 1, p. 10",
+    kk: { w: "орбита", d: "Ғарыштағы бір дененің басқа дененің айналасында жүретін қисық жолы." },
+    ru: { w: "орбита", d: "Изогнутый путь, по которому тело в космосе движется вокруг другого тела." } },
+  axis: { en: "axis", pos: "noun", lesson: "L1",
+    def: { s: "an imaginary straight line through the middle of an object. The object spins around this line.",
+           m: "an imaginary straight line through the middle of an object, around which that object spins." },
+    forms: "axes (plural)", ex: "Earth also moves by spinning, or rotating, on its axis.", src: "Reader, Ch. 1, p. 12",
+    kk: { w: "ось (Жер осі)", d: "Заттың ортасынан өтетін ойша жүргізілген түзу сызық; зат осы сызықты айнала айналады." },
+    ru: { w: "ось", d: "Воображаемая прямая линия через середину объекта, вокруг которой он вращается." } },
+  rotate: { en: "rotate", pos: "verb", lesson: "L1",
+    def: { s: "to turn or spin around an axis or a center.", m: "to turn about an axis or a center." },
+    forms: "rotates, rotating, rotation", ex: "It takes one day for Earth to make one complete rotation on its axis.", src: "Reader, Ch. 1, p. 12",
+    kk: { w: "айналу (өз осінен)", d: "Ось немесе орталық төңірегінде айналу." },
+    ru: { w: "вращаться", d: "Поворачиваться вокруг оси или центра." } },
+  "solar system": { en: "solar system", pos: "noun", lesson: "L1",
+    def: { s: "the sun, the planets that go around it, and other objects like asteroids and meteors.",
+           m: "the sun, other bodies like asteroids and meteors, and the planets that orbit the sun." },
+    forms: "solar comes from Latin sol, “the sun”", ex: "The sun, planets, and other objects in space that orbit the sun are called the solar system.", src: "Reader, Ch. 1, p. 10",
+    kk: { w: "Күн жүйесі", d: "Күн, оны айнала жүретін ғаламшарлар және астероидтар мен метеорлар сияқты басқа денелер." },
+    ru: { w: "Солнечная система", d: "Солнце, планеты, которые движутся вокруг него, и другие тела, например астероиды и метеоры." } },
+  tilted: { en: "tilted", pos: "adjective", lesson: "L1",
+    def: { s: "leaning to one side.", m: "slanted or tipped to one side." },
+    forms: "tilt", ex: "So, the fact that Earth is tilted on its axis is what creates the seasons of the year.", src: "Reader, Ch. 1, p. 14",
+    kk: { w: "көлбеу", d: "Бір жаққа қисайған." },
+    ru: { w: "наклонённый", d: "Наклонённый, склонённый в одну сторону." } },
+  planet: { en: "planet", pos: "noun", lesson: "L1",
+    def: { s: "a big round object in space that goes around a star.", m: "a round object in space that orbits a star." },
+    forms: "planets", ex: "The sun is in the center of a group of eight planets.", src: "Reader, Ch. 1, p. 10",
+    kk: { w: "ғаламшар (планета)", d: "Жұлдызды айнала жүретін ғарыштағы дөңгелек дене." },
+    ru: { w: "планета", d: "Круглое тело в космосе, которое движется вокруг звезды." } },
+  eclipse: { en: "eclipse", pos: "noun", lesson: "L2",
+    def: { s: "when one object in space blocks the sunlight, so it can't reach another object.",
+           m: "the blocking of the light from the sun by another heavenly body." },
+    forms: "eclipses · solar eclipse · lunar eclipse", ex: "When Earth, the moon, and the sun all move together in a direct line, something called an eclipse can take place.", src: "Reader, Ch. 2, p. 20",
+    kk: { w: "тұтылу", d: "Бір аспан денесінің Күн жарығын басқа денеге жеткізбей жабуы." },
+    ru: { w: "затмение", d: "Когда одно небесное тело закрывает солнечный свет от другого." } },
+  "solar eclipse": { en: "solar eclipse", pos: "noun", lesson: "L2",
+    def: { s: "the moon gets between the sun and Earth, so we can't see the sun (or part of it) for a while.",
+           m: "an eclipse of the sun: the moon moves between the sun and Earth and blocks out the sun." },
+    forms: "eclipse of the sun", ex: "One kind happens when the moon gets in between the sun and Earth.", src: "Reader, Ch. 2, p. 20",
+    kk: { w: "Күннің тұтылуы", d: "Ай Күн мен Жердің арасына түсіп, Күнді жабады." },
+    ru: { w: "солнечное затмение", d: "Луна оказывается между Солнцем и Землёй и закрывает Солнце." } },
+  "lunar eclipse": { en: "lunar eclipse", pos: "noun", lesson: "L2",
+    def: { s: "the moon goes behind Earth, into Earth's shadow.",
+           m: "an eclipse of the moon: the moon passes behind Earth and into its shadow." },
+    forms: "eclipse of the moon", ex: "It takes place when the moon passes behind Earth and into its shadow.", src: "Reader, Ch. 2, p. 22",
+    kk: { w: "Айдың тұтылуы", d: "Ай Жердің артына, Жердің көлеңкесіне кіреді." },
+    ru: { w: "лунное затмение", d: "Луна уходит за Землю, в её тень." } },
+  reflect: { en: "reflect", pos: "verb", lesson: "L2",
+    def: { s: "light hits something and bounces off.", m: "to send light back: light hits an object and bounces off." },
+    forms: "reflects, reflected", ex: "It simply reflects light from the sun. That means light from the sun hits the moon and bounces off.", src: "Reader, Ch. 2, p. 16",
+    kk: { w: "шағылыстыру", d: "Жарықтың затқа тиіп, кері серпілуі." },
+    ru: { w: "отражать", d: "Свет попадает на предмет и отскакивает от него." } },
+  "naked eye": { en: "naked eye", pos: "noun phrase", lesson: "L3",
+    def: { s: "your own eyes, with no telescope or other tool.", m: "your eye alone: looking without a telescope or any other tool." },
+    forms: "with the naked eye", ex: "They used just their naked eye to study the planets.", src: "Reader, Ch. 3, p. 24",
+    kk: { w: "жай көз", d: "Телескопсыз, ешбір құралсыз, тек өз көзіңмен қарау." },
+    ru: { w: "невооружённый глаз", d: "Смотреть своими глазами, без телескопа и других приборов." } },
+  probe: { en: "probe", pos: "noun", lesson: "L3",
+    def: { s: "a tool that is sent to explore something, like outer space.", m: "a tool used to explore something, such as outer space." },
+    forms: "probes · space probe", ex: "Many space probes and robots have landed on Mars. They have taken photographs and also dug up rocks.", src: "Reader, Ch. 3, p. 30",
+    kk: { w: "ғарыш зонды", d: "Бір нәрсені, мысалы, ғарышты зерттеуге арналған құрал." },
+    ru: { w: "космический зонд", d: "Инструмент для исследования чего-либо, например космоса." } },
+  telescope: { en: "telescope", pos: "noun", lesson: "L3",
+    def: { s: "a tool that helps us get a better look at faraway things, like the planets.", m: "a tool that helps us get a better look at faraway objects such as the planets." },
+    forms: "telescopes", ex: "Now, we have telescopes and other tools that help us get a better look at the planets.", src: "Reader, Ch. 3, p. 24",
+    kk: { w: "телескоп", d: "Ғаламшарлар сияқты алыстағы нәрселерді жақсырақ көруге көмектесетін құрал." },
+    ru: { w: "телескоп", d: "Прибор, который помогает лучше рассмотреть далёкие объекты, например планеты." } }
+};
+
+/* Free-question knowledge base. keys = groups of stems; every group must match.
+   "=word" means exact token. soc = Socratic version (asked when balance needs it). */
+const KB = [
+  // ---------- Chapter 1 ----------
+  { keys: [["orbit", "орбит"], ["rotat", "spin", "turn", "вращ"]], w: 1, src: "Reader, Ch. 1, pp. 10–12",
+    a: "Earth moves in **two** ways. It **orbits** the sun: it travels on a curved path around the sun, and one trip takes about 365 days, one year. It also **rotates**: it spins on its axis, and one full spin takes one day. Orbiting gives us the year; rotating gives us day and night.",
+    soc: { q: "Good one to think about. Earth orbits the sun **and** rotates on its axis. One of these takes **one day** and the other takes **one year**. Which is which?", acc: [/day/, /year/], all: true,
+      hint: "One full spin on the axis turns your side of Earth to the sun and away again: one daytime and one nighttime. How long is that?" } },
+  { keys: [["365", "year", "how many days", "how long", "жыл", "год"]], src: "Reader, Ch. 1, p. 12",
+    a: "It takes Earth about **365 days**, which is **one year**, to orbit the sun once.",
+    soc: { q: "Let's work it out. Earth needs about 365 days to go once around the sun. What do we call 365 days?", acc: [/year|жыл|год/], hint: "Your birthday comes once every ___." } },
+  { keys: [["orbit", "орбит"]], src: "Reader, Ch. 1, p. 10 · Ch. 2, p. 18",
+    a: "An **orbit** is the curved path something in space takes around another object. All eight planets, including Earth, orbit the sun. The moon orbits Earth.",
+    soc: { q: "The book says planets “circle, or orbit, around the sun.” So what shape is an orbit like, and what is in the middle of Earth's orbit?", acc: [/circ|round|curv|ring/, /sun|күн|солн/], all: false,
+      hint: "Look at the word the book puts right before “or orbit”: “___, or orbit”. And what is in the center of the solar system?" } },
+  { keys: [["axis", "axes", "ось", "осі", "осьт"]], src: "Reader, Ch. 1, pp. 12–14",
+    a: "An **axis** is an imaginary straight line through the middle of an object. The object spins around it. Earth spins on its axis once a day, like a toy top spinning on the floor. Earth's axis is **tilted**, and that tilt gives us the seasons.",
+    soc: { q: "Think of a toy top spinning on the floor. Is there a real stick through Earth? So is the axis a real line or an imaginary one?", acc: [/imagin|not real|pretend|invisible|no stick|isn.?t real|ойша|воображ/],
+      hint: "The book's definition starts: “an ___ straight line through the middle of an object”." } },
+  { keys: [["rotat", "spin", "вращ"]], src: "Reader, Ch. 1, p. 12",
+    a: "To **rotate** means to turn about an axis or a center. Earth rotates (spins) on its axis. One complete rotation takes **one day**. As it rotates, different parts of Earth face the sun.",
+    soc: { q: "If Earth makes one complete rotation on its axis, how much time passes: a day, a month or a year?", acc: [/day|күн|день|сутк/], hint: "The book says: “It takes one ___ for Earth to make one complete rotation on its axis.”" } },
+  { keys: [["day", "night", "dark", "daytime", "nighttime", "ночь", "түн"]], src: "Reader, Ch. 1, p. 12",
+    a: "Day and night come from Earth **rotating** on its axis. The side of Earth facing the sun gets sunlight, so it is daytime there. The side facing away gets no sunlight, so it is nighttime. When it is daytime where we live, it is nighttime on the other side of Earth.",
+    soc: { q: "Let's figure it out. As Earth spins, one side faces the sun and gets sunlight. What happens on the side facing **away** from the sun?", acc: [/night|dark|no (sun)?light|ночь|түн|темн|қараңғ/],
+      hint: "Does any sunlight reach a side that is turned away from the sun?" } },
+  { keys: [["season", "summer", "winter", "spring", "tilt", "жаз", "қыс", "лет", "зим", "сезон", "маусым"]], src: "Reader, Ch. 1, p. 14",
+    a: "Earth's axis is **tilted** (tipped to one side). When your part of Earth is tilted **toward** the sun, the sunlight is more direct and feels hotter, so it is summer. When it is tilted **away** from the sun, there is less sunlight, so it is winter. So the tilt of the axis creates the seasons.",
+    soc: { q: "Earth's axis is tilted. When your part of Earth leans **toward** the sun, the sunlight is more direct. Which season do you think that makes?", acc: [/summer|hot|warm|жаз|лет/], hint: "More direct sunlight feels hotter. Which season is the hottest?" } },
+  { keys: [["solar", "солнеч"], ["system", "жүйе", "систем"]], src: "Reader, Ch. 1, p. 10",
+    a: "The **solar system** is the sun, the planets that orbit it, and other objects in space that orbit the sun, like asteroids and meteors. There are eight planets, and Earth is one of them." },
+  { keys: [["solar", "=sol"]], src: "Reader, Ch. 1, p. 10",
+    a: "The word **solar** has the Latin root *sol*, which means “the sun.” Everything in the solar system relates to the sun. A **solar** eclipse is an eclipse of the sun.",
+    soc: { q: "The word *solar* has a Latin root, *sol*. Can you guess what *sol* means? Think: what is in the center of the solar system?", acc: [/sun|күн|солн/], hint: "It is the star in the center, the one the eight planets orbit." } },
+  { keys: [["planet", "планет", "ғаламшар"], ["how many", "number", "eight", "=8", "list", "which", "сколько", "қанша"]], w: 1, src: "Reader, Ch. 3, p. 24",
+    a: "There are **eight** planets in our solar system: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune. All of them orbit the sun." },
+  { keys: [["planet", "планет", "ғаламшар"]], src: "Teacher Guide, Lesson 1 · Reader, Ch. 1, p. 10",
+    a: "A **planet** is a round object in space that orbits a star. Earth is a planet. It is one of eight planets that orbit the sun." },
+  { keys: [["sun", "солнц", "күн", "closest", "nearest"], ["star", "звезд", "жұлдыз"]], w: 1, src: "Reader, Ch. 1, p. 8",
+    a: "Yes. The sun **is a star**. It is the closest star to Earth. It is made of different, hot gases.",
+    soc: { q: "Here is a surprise from the book: the sun is the same kind of object as the tiny lights you see at night, only much closer. What kind of object is it?", acc: [/star|звезд|жұлдыз/], hint: "Twinkle, twinkle, little ___." } },
+  { keys: [["sun", "солнц"], ["made", "gas", "hot", "heat", "degree", "temperatur", "energy", "warm"]], w: 1, src: "Reader, Ch. 1, pp. 6–8",
+    a: "The sun is made of different, **hot gases**. A hot summer day on Earth is 100 degrees; on the sun it is **10,000 degrees**, all the time. The sun's gases create light and heat energy. That light and heat give life to plants and animals. Without the sun, Earth would be freezing cold." },
+  { keys: [["sun", "солнц"], ["move", "around", "rise", "set", "east", "west", "believ", "long ago"]], w: 1, src: "Reader, Ch. 1, p. 8",
+    a: "Long ago, people believed the sun moved around Earth, because it rose in the east and set in the west. But that is not what really happens. The sun does not move around Earth. **Earth moves around the sun!**",
+    soc: { q: "Each morning the sun rises in the east and sets in the west. Long ago people said the sun moves around Earth. What do we know now: what moves around what?", acc: [/earth.*(around|orbit|circl|moves).*sun|earth moves|земл|жер/], hint: "The book says: “It is ___ that moves around the sun!”" } },
+
+  // ---------- Chapter 2 ----------
+  { keys: [["solar", "sun", "солнеч", "күннің"], ["eclips", "затмен", "тұтыл"]], w: 1, src: "Reader, Ch. 2, pp. 20–22",
+    a: "In a **solar eclipse** (an eclipse of the sun), the **moon gets between the sun and Earth**. For a while we can't see the sun, or part of it. You must **never** look directly at a solar eclipse: the sun is very bright and could burn your eyes. Solar eclipses can only be seen from a narrow strip of Earth, so seeing one is very rare.",
+    soc: { q: "In a solar eclipse, people on Earth can't see the sun for a while. Which object do you think moves **between** the sun and Earth to block it?", acc: [/moon|лун|=ай/], hint: "It is the object that orbits Earth about once a month." } },
+  { keys: [["lunar", "moon", "лун", "=ай", "айдың"], ["eclips", "затмен", "тұтыл"]], src: "Reader, Ch. 2, p. 22",
+    a: "In a **lunar eclipse** (an eclipse of the moon), the moon passes **behind Earth and into Earth's shadow**. Earth blocks the sun's light, so part of the moon is in darkness. It is safe to look at a lunar eclipse. They happen several times each year and can be seen from half of Earth at a time.",
+    soc: { q: "In a lunar eclipse a dark shadow covers part of the moon. Whose shadow do you think it is?", acc: [/earth|земл|жер/], hint: "Which big object is in the middle, between the sun and the moon?" } },
+  { keys: [["solar", "солнеч", "күннің"], ["lunar", "лунн", "айдың"], ["eclips", "затмен", "тұтыл"]], w: 2, src: "Reader, Ch. 2, pp. 20–22",
+    a: "Both are eclipses: the sun's light is blocked. The difference is **which object is in the middle**.\n• **Solar eclipse** (eclipse of the sun): Sun → **Moon** → Earth. The moon blocks the sun, so we can't see it for a while. Never look at it directly! Very rare to see.\n• **Lunar eclipse** (eclipse of the moon): Sun → **Earth** → Moon. The moon moves into Earth's shadow. Safe to look at, and seen more often.",
+    soc: { q: "Let's compare. In both eclipses the sun, Earth and the moon are in a line. In a solar eclipse the **moon** is in the middle. Which object do you think is in the middle in a lunar eclipse?", acc: [/earth|земл|жер/], hint: "In a lunar eclipse a shadow falls on the moon. Whose shadow could it be?" } },
+  { keys: [["eclips", "затмен", "тұтыл"], ["look", "safe", "eyes", "danger", "watch", "see"]], w: 1, src: "Reader, Ch. 2, p. 22",
+    a: "You must **never look directly at a solar eclipse**. The sun is very bright and could burn your eyes. But it is **safe** to look at an eclipse of the moon (a lunar eclipse).",
+    soc: { q: "Which do you think is dangerous to look at: a solar eclipse or a lunar eclipse? Why?", acc: [/solar|sun|солнеч|күн/], hint: "Which of the two eclipses makes you look toward something extremely bright?" } },
+  { keys: [["eclips", "затмен", "тұтыл"], ["often", "rare", "frequen", "how many", "every year", "часто", "жиі"]], w: 1, src: "Reader, Ch. 2, p. 22",
+    a: "Eclipses do not happen often, because the sun, Earth, and the moon all have to line up just right. Solar eclipses happen once or twice a year but can only be seen from a narrow strip of Earth, so it is very rare to see one. Lunar eclipses happen several times each year and can be seen from half of Earth, so they are seen more often." },
+  { keys: [["eclips", "затмен", "тұтыл"]], src: "Reader, Ch. 2, p. 20 · Teacher Guide, Lesson 2",
+    a: "An **eclipse** is the blocking of the light from the sun by another object in space. It can happen when Earth, the moon, and the sun all line up in a **direct line**. There are two kinds: a **solar eclipse** (the moon blocks the sun) and a **lunar eclipse** (the moon moves into Earth's shadow).",
+    soc: { q: "An eclipse is about light being **blocked**. What do you think has to happen to the sun, Earth, and the moon for light to get blocked?", acc: [/line|between|middle|row|front|block|behind|in the way/], hint: "The book says they must all move together in a direct ___." } },
+  { keys: [["moon", "луна", "=ай"], ["light", "shine", "glow", "bright", "own", "свет", "жарық"]], w: 1, src: "Reader, Ch. 2, p. 16",
+    a: "The moon does **not** make its own light. It is a ball of rock. It **reflects** light from the sun: light from the sun hits the moon and bounces off.",
+    soc: { q: "The moon can look like it shines and glows. Do you think it makes its own light like the sun? If not, where does its light come from?", acc: [/reflect|bounc|sun|no|not|отраж|шағыл|солнц|күн/], hint: "The book says the moon is a ball of rock that “simply ___ light from the sun.”" } },
+  { keys: [["reflect", "bounc", "отраж", "шағыл"]], src: "Reader, Ch. 2, p. 16",
+    a: "To **reflect** light means light hits something and bounces off. The moon reflects light from the sun. That is why we can see the moon at night, even though it makes no light of its own." },
+  { keys: [["moon", "луна", "=ай"], ["shape", "size", "change", "phase", "look", "different"]], w: 1, src: "Reader, Ch. 2, p. 18",
+    a: "The moon's size and shape do **not** really change. It is still a round ball. It looks different at different times of the month because of the way the sun's light is reflected and how much of the moon we can see from Earth. These changes are called the phases of the moon.",
+    soc: { q: "The moon looks different during the month. But do you think the moon really changes its size and shape? What could change instead?", acc: [/no|not|light|reflect|see|part|how much/], hint: "The moon reflects sunlight. Think about how much of the lit part we can see from Earth." } },
+  { keys: [["moon", "луна", "=ай"], ["month", "orbit", "around", "circle", "long", "take"]], w: 1, src: "Reader, Ch. 2, p. 18",
+    a: "The moon **orbits Earth**. It takes just about **one month** for the moon to completely circle Earth.",
+    soc: { q: "The moon orbits Earth. Earth orbits the sun in a year. Do you think the moon takes a day, a month, or a year to circle Earth?", acc: [/month|ай|месяц/], hint: "The word “month” is related to the word “moon”. Think about it!" } },
+  { keys: [["lunar"]], src: "Reader, Ch. 2, p. 22",
+    a: "**Lunar** is about the moon. The book calls the same event a “lunar eclipse” and an “eclipse of the moon.”" },
+  { keys: [["moon", "луна", "=ай"]], src: "Reader, Ch. 2, pp. 16–18",
+    a: "The moon is a ball of rock that gives off no light of its own: it reflects light from the sun. It orbits Earth, and one trip takes about one month." },
+
+  // ---------- Chapter 3 ----------
+  { keys: [["naked", "невооруж", "жай көз"]], src: "Reader, Ch. 3, p. 24 · Teacher Guide, Lesson 3",
+    a: "The **naked eye** means just your own eye, with no telescope or other tool. People from Mesopotamia, the Greeks, Mayans, Incas, and Aztecs studied the planets with just their naked eye.",
+    soc: { q: "Long ago people studied the planets with no telescopes. The book says they used their “naked eye.” What do you think that means?", acc: [/own|just|only|without|no (tool|telescope)|eye|глаз|көз/], hint: "Here “naked” means “with nothing added.” What could you add to your eye to see farther?" } },
+  { keys: [["telescop", "телескоп"]], src: "Reader, Ch. 3, p. 24",
+    a: "A **telescope** is a tool that helps us get a better look at the planets. Long ago people had no telescopes and used just their naked eye. Now we have telescopes and other tools.",
+    soc: { q: "People long ago used their naked eye. Why do you think people today use telescopes?", acc: [/better|closer|see|look|far|clear|bigger|more|detail/], hint: "The book says telescopes help us get a ___ look at the planets." } },
+  { keys: [["mars", "марс"], ["ice", "water", "life", "alive", "live", "лёд", "лед", "вода", "жизн", "мұз", "су", "өмір"]], w: 1, src: "Reader, Ch. 3, p. 30",
+    a: "A probe that went to Mars found **ice**, which is frozen water. That was big news: **if there is water on Mars, there might be life.** Experts don't agree. Some say nothing could live on Mars because it is too cold and too dry. Others think something might be alive under the rocks. Others think there was life on Mars once, but not now.",
+    soc: { q: "A probe found ice on Mars. Ice is frozen water. Why do you think scientists got so excited about water?", acc: [/life|live|alive|living|жизн|өмір|тірі|жив/], hint: "Finish the book's sentence: “If there is water on Mars, there might be ___.”" } },
+  { keys: [["probe", "зонд"]], src: "Reader, Ch. 3, p. 30 · Teacher Guide, Lesson 3",
+    a: "A **probe** is a tool used to explore something, such as outer space. Many space probes and robots have landed on Mars. They have taken photographs and dug up rocks, and one probe found ice.",
+    soc: { q: "The book says probes “landed on Mars,” “took photographs” and “dug up rocks.” So what job do you think a probe does?", acc: [/explor|study|learn|find|research|investig|discover|photo|look|зерт|исслед|изуч/], hint: "Probes go to places people can't easily go, to find out what is there. Another word for that is to ___ a place." } },
+  { keys: [["mars", "марс"], ["red", "colou", "color", "rust", "қызыл", "красн"]], w: 1, src: "Reader, Ch. 3, p. 30",
+    a: "Mars looks quite **red** in the night sky because the rocks on Mars contain **rust**." },
+  { keys: [["mars", "марс"]], src: "Reader, Ch. 3, p. 30",
+    a: "Mars is the **fourth** planet from the sun. It is named after the Roman god of war. It looks red because its rocks contain rust. Many probes and robots have landed on Mars, and one found ice." },
+  { keys: [["mercury", "меркур"]], w: 1, src: "Reader, Ch. 3, pp. 26–28",
+    a: "Mercury is the planet **closest to the sun** and the **smallest** of all the planets. It needs just **88 days** to orbit the sun. It is named after the Roman god Mercury (the Greek name for this god is Hermes)." },
+  { keys: [["venus", "венер", "шолпан"]], w: 1, src: "Reader, Ch. 3, pp. 26–28",
+    a: "Venus is the **second** planet from the sun and the closest planet to Earth. It needs 225 days to orbit the sun. It was named after the Roman goddess of love. Scientists once thought Venus might be a lot like Earth (same size, covered with clouds), but they changed their ideas to fit new facts: Venus is much hotter than Earth." },
+  { keys: [["closer", "farther", "faster", "slower", "longer", "less time", "more time", "=88", "=225"]], src: "Reader, Ch. 3, p. 26",
+    a: "The **closer** a planet is to the sun, the **less time** it needs to orbit the sun. Mercury needs 88 days, Venus 225 days, Earth 365 days. Planets farther away take much longer: Neptune takes 165 years!",
+    soc: { q: "Mercury is closest to the sun and needs 88 days to orbit it. Earth needs 365 days. What's the pattern: does a planet closer to the sun need **more** or **less** time?", acc: [/less|short|fast|quick|меньше|аз|быстр/], hint: "Compare the numbers: 88 is smaller than 365. And Mercury is the closer one." } },
+  { keys: [["planet", "планет", "ғаламшар", "mercury", "venus", "mars"], ["closest", "nearest", "inner", "rocky", "first four", "four", "surface", "близк", "жақын"]], w: 2, src: "Reader, Ch. 3, p. 26",
+    a: "The four planets closest to the sun are **Mercury, Venus, Earth, and Mars**. They are small planets with a rocky, or solid, surface." },
+  { keys: [["jupiter", "saturn", "uranus", "neptune", "юпитер", "сатурн", "уран", "нептун"]], src: "Reader, Ch. 3, pp. 24–26",
+    a: "Jupiter, Saturn, Uranus, and Neptune are the other planets that orbit the sun. In our three lessons the book only tells us that the far planets take much longer to orbit: **Neptune takes 165 years!** They are explained in Chapter 4, which is not part of this demo course." },
+  { keys: [["long ago", "ancient", "greek", "maya", "inca", "aztec", "mesopotam", "thousand"]], src: "Reader, Ch. 3, p. 24",
+    a: "People have looked at the planets for thousands of years. People from Mesopotamia, the Greeks, Mayans, Incas, and Aztecs were all interested in the planets. They used just their **naked eye**. Now we have telescopes and other tools." },
+  { keys: [["name", "named", "god", "goddess", "roman"]], src: "Reader, Ch. 3, pp. 28–30",
+    a: "The English names of the planets come from the Romans. Mercury is named after the Roman god Mercury (Hermes in Greek). Venus is named after the Roman goddess of love. Mars is named after the Roman god of war." },
+  { keys: [["scientist", "expert", "disagree", "argue", "change their idea"]], src: "Reader, Ch. 3, pp. 28–30",
+    a: "Scientists sometimes have to change their ideas to fit new facts. For a long time they thought Venus was a lot like Earth, but now they know Venus is much hotter. About Mars, experts still argue: some say nothing could live there, others think there might be life under the rocks." }
+];
+
+/* ============================ LESSONS ============================ */
+const LESSONS = [
+  { id: "L1", title: "Orbit & Axis", sub: "How Earth moves", terms: ["orbit", "axis"], src: "Reader Ch. 1 “The Sun, Earth, and Our Solar System”, pp. 6–15",
+    badge: { id: "orbit", name: "Orbit Ace" },
+    steps: [
+      { t: "dir", nocount: true, text: "Welcome to **Lesson 1**! You will learn two key terms: [[orbit]] and [[axis]]. They come from Chapter 1 of our Reader, “The Sun, Earth, and Our Solar System.”" },
+      { t: "soc", q: "Let's start with a puzzle from the book. Every morning the sun rises in the **east**, and every evening it sets in the **west**. Long ago, people decided the sun moves around Earth. Do you agree?",
+        options: [ { l: "Yes, the sun moves around Earth", fb: "That is exactly what people believed long ago! It seemed to make sense. But the book says it is not what really happens." },
+                   { l: "No, Earth moves around the sun", ok: true } ],
+        hints: [ "The book says: “The sun does not move around Earth. It is ___ that moves around the sun!” Which planet fits in the gap?" ],
+        after: "“It is Earth that moves around the sun!” (Reader, p. 8). Moving around the sun has a special name. Let's find it." },
+      { t: "soc", open: true, q: "Read this sentence from page 10:\n“All of these planets, including Earth, **circle**, or **orbit**, around the sun.”\nWhich word in the sentence means almost the same as *orbit*?",
+        accept: [/circle/],
+        options: [ { l: "planets", fb: "Planets are the things that move. We need the word for the movement." }, { l: "circle", ok: true }, { l: "sun", fb: "The sun is in the center. We need the word for how planets move around it." } ],
+        hints: [ "Look at the two words joined by “or”: “___, or orbit”.", "The word is also the name of a round shape." ],
+        after: "The word is **circle**. When the book writes “circle, or orbit”, it gives you a synonym. Writers often do this to explain a new word." },
+      { t: "term", term: "orbit", svg: "orbit" },
+      { t: "soc", open: true, q: "It takes Earth about **365 days** to orbit the sun one time. What do we call 365 days?",
+        accept: [/year|жыл|год/],
+        options: [ { l: "one day", fb: "A day is much shorter. 365 days is a lot of days!" }, { l: "one month", fb: "A month is only about 30 days." }, { l: "one year", ok: true } ],
+        hints: [ "Think about your birthday. How often does it come?" ],
+        after: "One orbit of the sun = **one year** on Earth (Reader, p. 12)." },
+      { t: "dir", svg: "axis",
+        text: { s: "Earth moves in a **second** way, too. It spins like a toy top. It spins around a line through its middle. This line is called the [[axis]]. The line is not real. It is imaginary.",
+                m: "But Earth moves in **two** ways. Besides orbiting the sun, Earth also spins, or [[rotate|rotates]], on its [[axis]], like a toy top spinning on the floor. The axis is an imaginary line from the North Pole to the South Pole, right through Earth's center." } },
+      { t: "term", term: "axis" },
+      { t: "soc", q: "Earth makes one complete turn (rotation) on its axis. How long does that take?",
+        options: [ { l: "One day", ok: true }, { l: "One month", fb: "About one month is how long the moon takes to go around Earth. That's Lesson 2!" }, { l: "One year", fb: "One year is one trip around the sun. That is an orbit, not a turn on the axis." } ],
+        hints: [ "The book says: “It takes one ___ for Earth to make one complete rotation on its axis.”" ],
+        after: "One spin on the axis = **one day**." },
+      { t: "soc", open: true, svg: "axis", q: "Now think like a scientist. As Earth spins, one side faces the sun and gets sunlight. It is daytime there. What is it like on the side facing **away** from the sun?",
+        accept: [/night|dark|no (sun)?light|ночь|түн|темн|қараңғ/],
+        options: [ { l: "It is nighttime", ok: true }, { l: "It is also daytime", fb: "Does any sunlight reach the side that faces away from the sun?" }, { l: "It is summer", fb: "Seasons come from something else. Here we only think about light and dark." } ],
+        hints: [ "Does sunlight reach a side that is turned away from the sun?", "No sunlight means it is dark. What do we call the dark part of a day?" ],
+        after: "Spinning on its axis makes **day and night**. When it is daytime here, it is nighttime on the other side of Earth (Reader, p. 12)." },
+      { t: "dir", svg: "tilt",
+        text: "One more fact. Earth's axis is [[tilted]], tipped to one side. When your part of Earth is tilted **toward** the sun, the sunlight is more direct and it is **summer**. When it is tilted **away**, it is **winter**. So the tilt of the axis creates the seasons (Reader, p. 14)." },
+      { t: "dir", text: "Let's put it together:\n• **orbit**: the path around the sun → **one year**\n• **axis**: the imaginary line Earth spins around → **one day**, day and night\nTime for a game!" },
+      { t: "game", game: "sort", cfg: {
+        title: "Orbit or Axis?", intro: "Sort each clue into the right term. Be quick: 3 correct in a row gives a combo bonus!",
+        bins: ["orbit", "axis"],
+        items: [
+          { x: "takes Earth about 365 days, one year", b: "orbit", why: "One trip around the sun takes one year." },
+          { x: "an imaginary straight line through the middle of Earth", b: "axis", why: "That is the definition of axis." },
+          { x: "a toy top spins around it", b: "axis", why: "A top spins around its axis, just like Earth." },
+          { x: "the curved path Earth takes around the sun", b: "orbit", why: "That is the definition of orbit." },
+          { x: "spinning around it makes day and night", b: "axis", why: "Rotating on the axis gives us day and night." },
+          { x: "the moon travels in one around Earth", b: "orbit", why: "The moon orbits Earth about once a month." },
+          { x: "it is tilted, so we have seasons", b: "axis", why: "The tilted axis creates the seasons." },
+          { x: "all eight planets have one around the sun", b: "orbit", why: "Every planet orbits the sun." } ] } },
+      { t: "explore", suggestions: [ "What is the difference between orbit and rotate?", "Why do we have seasons?", "Is the sun a star?", "What does “solar” mean?" ] },
+      { t: "exit", qs: [
+        { q: "The curved path a planet takes around the sun is its…", o: [ "axis", "orbit", "season" ], a: 1, why: "An orbit is the curved path around another object." },
+        { q: "Earth spins on its ___, and this makes day and night.", o: [ "orbit", "sun", "axis" ], a: 2, why: "Earth rotates on its axis once a day." },
+        { q: "How long does it take Earth to orbit the sun once?", o: [ "one day", "one month", "about 365 days (one year)" ], a: 2, why: "One orbit = 365 days = one year." } ] }
+    ] },
+
+  { id: "L2", title: "Eclipse", sub: "When light is blocked", terms: ["eclipse"], src: "Reader Ch. 2 “The Moon”, pp. 16–23",
+    badge: { id: "eclipse", name: "Eclipse Expert" },
+    steps: [
+      { t: "dir", nocount: true, text: "Welcome to **Lesson 2**! Today's key term is [[eclipse]]. We use Chapter 2 of the Reader, “The Moon.” To understand eclipses, we first need to understand moonlight." },
+      { t: "soc", q: "At night the moon can look white, gray, or silver. Sometimes it seems to shine and glow. Does the moon make its **own** light, like the sun?",
+        options: [ { l: "Yes, it makes its own light", fb: "It does look like it glows! But the book says the moon is “a ball of rock that gives off no light of its own.”" }, { l: "No, it doesn't", ok: true } ],
+        hints: [ "The moon is a ball of **rock**. Can a rock make light the way the sun's hot gases do?" ],
+        after: "The moon is a ball of rock. It makes no light of its own." },
+      { t: "soc", open: true, q: "So where does moonlight come from? A clue from page 16: “It simply **reflects** light from the sun.”\nWhat do you think *reflects* means?",
+        accept: [/bounc|back|mirror|return|отраж|шағыл|hits?.*(off|back)/],
+        options: [ { l: "Light hits the moon and bounces off", ok: true }, { l: "The moon makes light inside", fb: "Remember: the moon gives off no light of its own." }, { l: "The moon hides the light", fb: "Hiding light is closer to an eclipse. We'll get there soon!" } ],
+        hints: [ "The very next sentence in the book explains it: “That means light from the sun hits the moon and ___ off.”" ],
+        after: "To **reflect** means light hits something and **bounces off**. Moonlight is really sunlight bouncing off the moon." },
+      { t: "dir", text: "The moon also moves. It [[orbit|orbits]] Earth (remember Lesson 1?), and one trip takes about **one month**. The moon seems to change shape during the month, but it is still a round ball. We just see different amounts of the sunlight it reflects (Reader, p. 18)." },
+      { t: "dir", text: "Sometimes Earth, the moon, and the sun all line up in a **direct line**. Then something special can happen. One object blocks the sunlight from reaching another. This is an [[eclipse]]." },
+      { t: "term", term: "eclipse" },
+      { t: "soc", open: true, svg: "solar", q: "There are two kinds of eclipse. In the first kind, people on Earth **can't see the sun** for a while. Look at the picture. Which object moves **between** the sun and Earth?",
+        accept: [/moon|лун|=ай/],
+        options: [ { l: "Mars", fb: "Mars is far away. Which object orbits Earth once a month?" }, { l: "The moon", ok: true }, { l: "A cloud", fb: "Clouds can hide the sun, but that is weather, not an eclipse. Think of objects in space." } ],
+        hints: [ "It is the object we started this lesson with." ],
+        after: "The **moon** moves between the sun and Earth. This is a [[solar eclipse]], an eclipse of the sun. Remember from Lesson 1: *solar* comes from *sol*, “the sun.”" },
+      { t: "soc", open: true, svg: "lunar", q: "In the second kind, the moon passes **behind** Earth. Look at the picture: a shadow covers the moon. Whose shadow is it?",
+        accept: [/earth|земл|жер/],
+        options: [ { l: "The sun's", fb: "The sun gives light. A shadow appears when something blocks the light." }, { l: "Earth's", ok: true }, { l: "The moon's own shadow", fb: "Something else must block the light before it reaches the moon. What is in the middle?" } ],
+        hints: [ "Which object is in the middle, blocking the sunlight from reaching the moon?" ],
+        after: "It is **Earth's shadow**. Earth has blocked out the sun and left part of the moon in darkness. This is a [[lunar eclipse]], an eclipse of the moon." },
+      { t: "soc", q: "Which eclipse is **dangerous** to look at directly?",
+        options: [ { l: "A solar eclipse: the sun is very bright and could burn your eyes", ok: true }, { l: "A lunar eclipse: the moon is too dark", fb: "A dark moon cannot hurt your eyes. Which object is extremely bright?" } ],
+        hints: [ "Which of the two eclipses makes you look toward the sun?" ],
+        after: "**Never** look directly at a solar eclipse. It is safe to look at an eclipse of the moon (Reader, p. 22)." },
+      { t: "dir", text: "Eclipses don't happen often, because the sun, Earth, and the moon must line up just right.\n• **Solar eclipse**: Sun → Moon → Earth. Seen only from a narrow strip of Earth, so very rare to see.\n• **Lunar eclipse**: Sun → Earth → Moon. Seen from half of Earth at a time, so seen more often.\nNow you build them!" },
+      { t: "game", game: "eclipse" },
+      { t: "explore", suggestions: [ "What is the difference between a solar and a lunar eclipse?", "Does the moon make its own light?", "How often do eclipses happen?", "How long does the moon take to orbit Earth?" ] },
+      { t: "exit", qs: [
+        { q: "An eclipse happens when…", o: [ "the moon changes shape", "one object in space blocks the light from the sun", "a planet spins on its axis" ], a: 1, why: "An eclipse is the blocking of the sun's light by another object in space." },
+        { q: "During a solar eclipse, which object is in the middle?", o: [ "Earth", "the moon", "the sun" ], a: 1, why: "The moon gets between the sun and Earth." },
+        { q: "During a lunar eclipse, the moon is covered by…", o: [ "Earth's shadow", "a cloud", "the sun's light" ], a: 0, why: "The moon passes behind Earth, into Earth's shadow." } ] }
+    ] },
+
+  { id: "L3", title: "Naked Eye & Probe", sub: "How we study the planets", terms: ["naked eye", "probe"], src: "Reader Ch. 3 “The Planets Closest to the Sun”, pp. 24–31",
+    badge: { id: "mission", name: "Mission Control" },
+    steps: [
+      { t: "dir", nocount: true, text: "Welcome to **Lesson 3**! Two key terms today: [[naked eye]] and [[probe]]. They come from Chapter 3, “The Planets Closest to the Sun: Mercury, Venus, Earth, and Mars.”" },
+      { t: "soc", q: "People from Mesopotamia, the Greeks, Mayans, Incas, and Aztecs studied the planets **thousands of years ago**. Do you think they had telescopes?",
+        options: [ { l: "Yes", fb: "The book says: “**Now**, we have telescopes.” So what about thousands of years ago?" }, { l: "No", ok: true } ],
+        hints: [ "Telescopes are tools we have “now”, the book says." ],
+        after: "They had no telescopes. But they still studied the planets!" },
+      { t: "soc", open: true, q: "The book says: “They used just their **naked eye** to study the planets.”\nWhat do you think *naked eye* means?",
+        accept: [/own eye|their eye|your eye|my eye|just (the |their |your |my )?eye|only (the |their |your |my )?eye|without|no (tool|telescope)|глаз|көз/],
+        options: [ { l: "Looking with just your own eyes, no tools", ok: true }, { l: "Closing your eyes", fb: "Then you couldn't see anything! They did look at the sky." }, { l: "Looking through a telescope", fb: "Remember, they had no telescopes." } ],
+        hints: [ "Here “naked” means “with nothing added.” What could people add to their eyes to see farther?", "They had no telescope. So what did they look with?" ],
+        after: "The **naked eye** is just your eye, with no telescope or other tool." },
+      { t: "term", term: "naked eye" },
+      { t: "dir", text: "Today we have [[telescope|telescopes]] and other tools that help us **get a better look** at the planets (Reader, p. 24). But some questions are hard to answer even with a telescope on Earth." },
+      { t: "soc", q: "Imagine you want to know what the **rocks on Mars** are like. Looking from Earth is not enough. What would you need to do?",
+        options: [ { l: "Look harder with the naked eye", fb: "Mars is very far away. Even a telescope can't dig up a rock!" }, { l: "Send a tool to Mars to explore it", ok: true }, { l: "Wait for Mars to come to Earth", fb: "Planets stay in their orbits around the sun. Mars won't come to us!" } ],
+        hints: [ "To study a rock up close, something has to go **there**." ],
+        after: "And that tool has a name: a **probe**." },
+      { t: "term", term: "probe" },
+      { t: "soc", open: true, q: "One probe that went to Mars found **ice**. That was big news! Ice is frozen water. Why do you think finding water on Mars was so exciting?",
+        accept: [/life|live|alive|living|жизн|өмір|тірі|жив/],
+        options: [ { l: "Mars could get colder", fb: "Scientists were thinking about something much bigger." }, { l: "There might be life on Mars", ok: true }, { l: "People could go ice skating there", fb: "That would be fun! But scientists were thinking about something bigger." } ],
+        hints: [ "Finish the book's sentence: “If there is water on Mars, there might be ___.”" ],
+        after: "“If there is water on Mars, there might be life.” (Reader, p. 30). Experts still argue about it: some say Mars is too cold and too dry, others think something might live under the rocks." },
+      { t: "dir", text: "Let's put it together:\n• **naked eye**: just your eyes → how people studied planets long ago\n• **telescope**: a tool for a better look from Earth\n• **probe**: a tool sent to explore → landed on Mars, took photos, dug up rocks, found ice\nMission Control needs you!" },
+      { t: "game", game: "sort", cfg: {
+        title: "Mission Control", intro: "Choose the right way to study space for each mission. Combo bonus for 3 in a row!",
+        bins: ["naked eye", "telescope", "probe"],
+        items: [
+          { x: "Ancient Greeks watching the planets", b: "naked eye", why: "Long ago, people used just their naked eye." },
+          { x: "Digging up rocks on Mars", b: "probe", why: "Probes have landed on Mars and dug up rocks." },
+          { x: "Getting a better look at the planets from Earth", b: "telescope", why: "Telescopes help us get a better look." },
+          { x: "Taking photographs on Mars", b: "probe", why: "Probes on Mars have taken photographs." },
+          { x: "Mayans, Incas, and Aztecs studying the planets", b: "naked eye", why: "They had no telescopes." },
+          { x: "Finding ice on Mars", b: "probe", why: "A probe that went to Mars found ice." },
+          { x: "Seeing the moon from your yard on a clear night, no tools", b: "naked eye", why: "No tools = naked eye." },
+          { x: "A tool people use today to study planets without leaving Earth", b: "telescope", why: "Telescopes stay on Earth; probes travel." } ] } },
+      { t: "explore", suggestions: [ "What is a probe?", "Why is Mars red?", "Could there be life on Mars?", "Which planets are closest to the sun?" ] },
+      { t: "exit", qs: [
+        { q: "Looking at the sky with just your eyes and no tools is using your…", o: [ "telescope", "naked eye", "probe" ], a: 1, why: "Naked eye = your eye alone." },
+        { q: "A tool used to explore something, such as outer space, is a…", o: [ "probe", "planet", "orbit" ], a: 0, why: "That is the definition of probe." },
+        { q: "What did a probe find on Mars that was big news?", o: [ "ice", "a city", "a new moon" ], a: 0, why: "Ice is frozen water, and water could mean life." } ] }
+    ] }
+];
+const FINAL = { id: "F", title: "Final: Term Match", sub: "Match all 6 terms", badge: { id: "master", name: "Term Master" } };
+
+/* ============================ DIAGRAMS ============================ */
+const SVG = {
+  orbit: `<svg viewBox="0 0 400 190" role="img" aria-label="Earth moving on its orbit around the sun">
+    <ellipse cx="200" cy="98" rx="160" ry="62" class="s-path"/>
+    <circle cx="200" cy="98" r="26" class="s-sun"/>
+    <circle cx="313" cy="142" r="11" class="s-earth"/>
+    <path d="M207 30 L195 36 L207 42" class="s-arrow"/>
+    <text x="200" y="20" text-anchor="middle" class="s-lbl">orbit</text>
+    <text x="200" y="146" text-anchor="middle" class="s-lbl2">sun</text>
+    <text x="335" y="170" text-anchor="middle" class="s-lbl2">Earth</text></svg>`,
+  axis: `<svg viewBox="0 0 400 200" role="img" aria-label="Earth spinning on its tilted axis; the side facing the sun has day">
+    <circle cx="40" cy="100" r="26" class="s-sun"/>
+    <line x1="74" y1="80" x2="120" y2="80" class="s-ray"/><line x1="74" y1="100" x2="120" y2="100" class="s-ray"/><line x1="74" y1="120" x2="120" y2="120" class="s-ray"/>
+    <circle cx="220" cy="100" r="62" class="s-earth"/>
+    <path d="M220 38 A62 62 0 0 1 220 162 Z" class="s-shade"/>
+    <line x1="186" y1="20" x2="254" y2="180" class="s-axis"/>
+    <path d="M172 52 Q220 30 268 52" class="s-arrow"/><path d="M258 42 L268 52 L255 57" class="s-arrow"/>
+    <text x="300" y="30" class="s-lbl">axis</text>
+    <text x="180" y="125" class="s-lbl" style="fill:var(--surface)">day</text>
+    <text x="236" y="125" class="s-lbl" style="fill:var(--surface)">night</text>
+    <text x="40" y="146" text-anchor="middle" class="s-lbl2">sun</text></svg>`,
+  tilt: `<svg viewBox="0 0 400 190" role="img" aria-label="Earth's tilted axis: tilted toward the sun is summer, away from the sun is winter">
+    <circle cx="200" cy="90" r="26" class="s-sun"/>
+    <circle cx="70" cy="90" r="32" class="s-earth"/><path d="M70 58 A32 32 0 0 0 70 122 Z" class="s-shade"/>
+    <line x1="55" y1="48" x2="85" y2="132" class="s-axis" transform="rotate(-40 70 90)"/>
+    <circle cx="330" cy="90" r="32" class="s-earth"/><path d="M330 58 A32 32 0 0 1 330 122 Z" class="s-shade"/>
+    <line x1="315" y1="48" x2="345" y2="132" class="s-axis" transform="rotate(-40 330 90)"/>
+    <text x="70" y="150" text-anchor="middle" class="s-lbl">Summer</text>
+    <text x="70" y="168" text-anchor="middle" class="s-lbl2">top tilted toward sun</text>
+    <text x="330" y="150" text-anchor="middle" class="s-lbl">Winter</text>
+    <text x="330" y="168" text-anchor="middle" class="s-lbl2">top tilted away</text>
+    <text x="200" y="135" text-anchor="middle" class="s-lbl2">sun</text></svg>`,
+  solar: `<svg viewBox="0 0 400 170" role="img" aria-label="Solar eclipse: the sun, then the moon, then Earth in a line; the moon's shadow falls on Earth">
+    <circle cx="55" cy="80" r="38" class="s-sun"/>
+    <polygon points="232,72 232,88 318,84 318,76" class="s-shade"/>
+    <circle cx="228" cy="80" r="10" class="s-moon"/>
+    <circle cx="340" cy="80" r="26" class="s-earth"/>
+    <text x="55" y="140" text-anchor="middle" class="s-lbl">Sun</text>
+    <text x="228" y="140" text-anchor="middle" class="s-lbl">Moon</text>
+    <text x="340" y="140" text-anchor="middle" class="s-lbl">Earth</text>
+    <text x="200" y="162" text-anchor="middle" class="s-lbl2">Solar eclipse</text></svg>`,
+  lunar: `<svg viewBox="0 0 400 170" role="img" aria-label="Lunar eclipse: the sun, then Earth, then the moon in a line; Earth's shadow covers the moon">
+    <circle cx="55" cy="80" r="38" class="s-sun"/>
+    <circle cx="220" cy="80" r="26" class="s-earth"/>
+    <polygon points="222,56 222,104 372,94 372,66" class="s-shade"/>
+    <circle cx="345" cy="80" r="10" class="s-moon"/>
+    <text x="55" y="140" text-anchor="middle" class="s-lbl">Sun</text>
+    <text x="220" y="140" text-anchor="middle" class="s-lbl">Earth</text>
+    <text x="345" y="140" text-anchor="middle" class="s-lbl">Moon</text>
+    <text x="200" y="162" text-anchor="middle" class="s-lbl2">Lunar eclipse: Earth's shadow on the moon</text></svg>`
+};
+function badgeSVG(id) {
+  const glyph = {
+    orbit: `<ellipse cx="50" cy="52" rx="24" ry="9" fill="none" stroke="var(--accent-ink)" stroke-width="3" transform="rotate(-20 50 52)"/><circle cx="50" cy="52" r="10" fill="var(--accent-ink)"/>`,
+    eclipse: `<circle cx="50" cy="52" r="16" fill="var(--accent-ink)"/><circle cx="58" cy="47" r="14" fill="var(--accent)"/>`,
+    mission: `<path d="M50 30 L60 58 L50 54 L40 58 Z" fill="var(--accent-ink)"/><circle cx="50" cy="66" r="4" fill="var(--accent-ink)"/>`,
+    master: `<path d="M50 32 l5.9 12 13.1 1.9-9.5 9.3 2.2 13.1L50 62.1 38.3 68.3l2.2-13.1-9.5-9.3 13.1-1.9z" fill="var(--accent-ink)"/>`
+  }[id];
+  return `<svg viewBox="0 0 100 104" aria-hidden="true"><path d="M50 4 L92 28 L92 76 L50 100 L8 76 L8 28 Z" fill="var(--accent)"/><path d="M50 12 L85 32 L85 72 L50 92 L15 72 L15 32 Z" fill="none" stroke="var(--accent-ink)" stroke-width="2" opacity=".5"/>${glyph}</svg>`;
+}
+
+/* ============================ STATE ============================ */
+const ROSTER = {
+  "aruzhan.7a": { code: "4821", name: "Aruzhan" },
+  "daniyar.7b": { code: "1937", name: "Daniyar" },
+  "teacher":    { code: "0000", name: "Teacher (demo)", unlockAll: true }
+};
+const LEVELS = { s: { name: "Starter", hints: 3 }, m: { name: "Middle", hints: 2 }, a: { name: "Advanced", hints: 1 } };
+const LANGNAME = { kk: "Қазақша", ru: "Русский" };
+const RANKS = [ [0, "Space Cadet"], [60, "Star Explorer"], [150, "Orbit Navigator"], [260, "Mission Commander"] ];
+const PRAISE = [ "Yes!", "Exactly!", "Great thinking!", "Spot on!", "You got it!" ];
+
+let S = null;          // per-student saved state
+let LOGIN = null;
+let RUN = 0;           // lesson run token (aborts an old lesson when a new one starts)
+let COMBO = 0;
+let inputWaiter = null;
+let QA = { pending: null };
+const ABORT = Symbol("abort");
+
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+function save() { if (LOGIN) store.set("senim:" + LOGIN, S); }
+function fresh() { return { prefs: null, xp: 0, lessons: {}, badges: [], soc: 0, dir: 0, seen: [] }; }
+
+/* ============================ HELPERS ============================ */
+const $ = (s) => document.querySelector(s);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function pick(x) { if (typeof x === "string") return x; const l = S && S.prefs ? S.prefs.level : "m"; return x[l] || x.m || x.s; }
+function norm(t) { return " " + String(t).toLowerCase().replace(/[’‘`]/g, "'").replace(/[“”"«»]/g, "").replace(/\s+/g, " ").trim() + " "; }
+function tokens(n) { return n.split(/[^\p{L}\p{N}']+/u).filter(Boolean); }
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function mk(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+
+function termSpan(key, disp) {
+  const t = TERMS[key];
+  if (!t) return disp;
+  const tr = t[S.prefs.lang].w;
+  if (S.prefs.level === "s") return `<strong>${disp}</strong> <span class="trn">(${esc(tr)})</span>`;
+  return `<button type="button" class="term" data-tr="${esc(LANGNAME[S.prefs.lang] + ": " + tr)}">${disp}</button>`;
+}
+function fmt(src) {
+  let s = esc(pick(src));
+  s = s.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (m, k, d) => termSpan(k, d || k));
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  return s.replace(/\n/g, "<br>");
+}
+
+/* ============================ CHAT PRIMITIVES ============================ */
+const chat = $("#chat");
+const TAGS = { soc: "Think it through", dir: "Explanation", game: "Game", check: "Quick check", ask: "Your questions" };
+function scrollDown() { requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; }); }
+function bubble(who, html, kind) {
+  const row = mk("div", "msg " + who);
+  const b = mk("div", "bubble", (kind ? `<span class="tag tag-${kind}">${TAGS[kind]}</span><br>` : "") + html);
+  row.append(b); chat.append(row); scrollDown();
+  return b;
+}
+function me(text) { bubble("me", esc(text)); }
+function sys(html) { bubble("sys", html); }
+async function typing(ms) {
+  const row = mk("div", "msg tutor", '<div class="bubble typing"><i></i><i></i><i></i></div>');
+  chat.append(row); scrollDown();
+  await sleep(reduced ? 120 : (ms || 520));
+  row.remove();
+}
+async function tutor(text, opt = {}) {
+  await typing(opt.wait);
+  let html = (opt.raw ? text : fmt(text));
+  if (opt.card) html += termCard(opt.card);
+  if (opt.svg) html += `<figure class="fig">${SVG[opt.svg]}</figure>`;
+  if (opt.src) html += `<cite>Source: ${esc(opt.src)}</cite>`;
+  const b = bubble("tutor", html, opt.kind);
+  if (opt.kind === "soc" && !opt.nocount) S.soc++;
+  if (opt.kind === "dir" && !opt.nocount) S.dir++;
+  renderBalance(); save();
+  return b;
+}
+function choices(b, labels, extra = [], struck = new Set()) {
+  return new Promise((res) => {
+    const box = mk("div", "choices");
+    const all = [];
+    labels.forEach((l, i) => {
+      const btn = mk("button", "choice" + (struck.has(i) ? " struck" : ""), fmt(l));
+      btn.type = "button"; btn.disabled = struck.has(i);
+      btn.onclick = () => done(btn, i, l); box.append(btn); all.push(btn);
+    });
+    extra.forEach((e) => { const btn = mk("button", "choice ghost", esc(e.l)); btn.type = "button"; btn.onclick = () => done(btn, e.v, e.l); box.append(btn); all.push(btn); });
+    function done(btn, v, l) { all.forEach((x) => (x.disabled = true)); btn.classList.add("picked"); inputWaiter = null; me(l.replace(/\*|\[\[|\]\]/g, "")); res(v); }
+    b.append(box); scrollDown();
+  });
+}
+/* waits for typed text OR an extra button */
+function awaitAnswer(b, extra) {
+  return new Promise((res) => {
+    const box = mk("div", "choices");
+    const btns = extra.map((e) => { const btn = mk("button", "choice ghost", esc(e.l)); btn.type = "button"; btn.onclick = () => { off(); me(e.l); res({ kind: e.v }); }; box.append(btn); return btn; });
+    function off() { btns.forEach((x) => (x.disabled = true)); inputWaiter = null; setMode(); }
+    inputWaiter = (txt) => { off(); res({ kind: "text", text: txt }); };
+    setMode("answer");
+    b.append(box); scrollDown(); $("#askInput").focus({ preventScroll: true });
+  });
+}
+function setMode(m) {
+  const input = $("#askInput"), mode = $("#composerMode");
+  if (m === "answer") { input.placeholder = "Type your answer…"; mode.textContent = "Answer in your own words. Short answers are fine."; }
+  else { input.placeholder = "Ask a question, e.g. “What is an orbit?”"; mode.textContent = "Ask me about the terms in our lessons. I answer only from our Reader."; }
+}
+function toast(t) { const e = mk("div", "toast", esc(t)); document.body.append(e); setTimeout(() => e.remove(), 1400); }
+function award(n) {
+  if (!n) return;
+  S.xp += n; toast("+" + n + " XP"); renderHeader(); save();
+}
+function bumpCombo(ok) {
+  COMBO = ok ? COMBO + 1 : 0;
+  const p = $("#comboPill");
+  p.hidden = COMBO < 2; p.textContent = "Combo ×" + COMBO;
+  return ok && COMBO >= 3 ? 2 : 0;
+}
+function sayAloud(word) {
+  try { const u = new SpeechSynthesisUtterance(word); u.lang = "en-US"; u.rate = .85; speechSynthesis.cancel(); speechSynthesis.speak(u); }
+  catch (e) { toast("Sound is not available here"); }
+}
+
+function termCard(key) {
+  const t = TERMS[key], tr = t[S.prefs.lang];
+  if (!S.seen.includes(key)) { S.seen.push(key); save(); }
+  return `<div class="tcard">
+    <div class="tc-head"><span class="tc-word">${esc(t.en)}</span><span class="tc-pos">${esc(t.pos)}</span><button type="button" class="say" data-say="${esc(t.en)}">Hear it</button></div>
+    <p class="tc-def">${esc(pick(t.def))}</p>
+    ${t.forms ? `<p class="tc-forms">Word family: ${esc(t.forms)}</p>` : ""}
+    <blockquote>“${esc(t.ex)}”<cite>${esc(t.src)}</cite></blockquote>
+    <div class="tc-tr"><span class="lang">${LANGNAME[S.prefs.lang]}</span><strong>${esc(tr.w)}</strong><span>${esc(tr.d)}</span></div>
+  </div>`;
+}
+
+/* ============================ LESSON ENGINE ============================ */
+async function runLesson(L) {
+  const tok = ++RUN; inputWaiter = null; QA.pending = null; COMBO = 0; bumpCombo(false);
+  const g = () => { if (tok !== RUN) throw ABORT; };
+  closeRail(); renderLessons(L.id);
+  chat.append(mk("div", "lesson-head", `<div class="label">Lesson ${L.id.slice(1)} · ${esc(L.sub)}</div><h2>${esc(L.title)}</h2><p>${esc(L.src)}</p>`));
+  try {
+    for (const st of L.steps) {
+      if (st.t === "dir") { await tutor(st.text, { kind: st.nocount ? null : "dir", svg: st.svg }); g(); await sleep(reduced ? 0 : 350); }
+      else if (st.t === "term") { await tutor(`Key term: **${TERMS[st.term].en}**`, { kind: "dir", card: st.term, svg: st.svg }); g(); await sleep(reduced ? 0 : 500); }
+      else if (st.t === "soc") { await socStep(st, g); }
+      else if (st.t === "game") { await gameStep(st, g); }
+      else if (st.t === "explore") { await exploreStep(L, st, g); }
+      else if (st.t === "exit") { await exitStep(L, st, g); }
+      g();
+    }
+  } catch (e) { if (e !== ABORT) throw e; }
+}
+
+async function socStep(st, g) {
+  const lvl = S.prefs.level;
+  const maxH = Math.min(st.hints.length, LEVELS[lvl].hints);
+  let useText = !!st.open && lvl !== "s";
+  let b = await tutor(st.q, { kind: "soc", svg: st.svg }); g();
+  let tries = 0, hints = 0;
+  const struck = new Set();
+  const reveal = async (pre) => { await tutor((pre ? pre + " " : "") + "Let's look at it together: " + pick(st.after)); g(); award(2); };
+  while (true) {
+    let r;
+    if (useText) r = await awaitAnswer(b, [ { l: "Hint, please", v: "hint" }, { l: "Show me choices", v: "choices" } ]);
+    else { const i = await choices(b, st.options.map((o) => o.l), [ { l: "Hint, please", v: "hint" } ], struck); r = i === "hint" ? { kind: "hint" } : { kind: "opt", i }; }
+    g();
+    if (r.kind === "choices") { useText = false; b = await tutor("Here are some choices. Pick the best one:"); g(); continue; }
+    if (r.kind === "text" && /don.?t know|no idea|not sure|idk|не знаю|білмеймін|help/.test(norm(r.text))) r = { kind: "hint" };
+    if (r.kind === "hint") {
+      if (hints < maxH) { b = await tutor("Hint: " + st.hints[hints], { kind: "soc", nocount: true }); hints++; g(); }
+      else { await reveal("No problem."); break; }
+      continue;
+    }
+    let ok, fb;
+    if (r.kind === "text") ok = st.accept.some((rx) => rx.test(norm(r.text)));
+    else { const o = st.options[r.i]; ok = !!o.ok; fb = o.fb; if (!ok) struck.add(r.i); }
+    if (ok) {
+      const bonus = bumpCombo(true);
+      award((tries === 0 && hints === 0 ? 10 : 5) + bonus);
+      await tutor(PRAISE[Math.floor(Math.random() * PRAISE.length)] + " " + pick(st.after)); g();
+      break;
+    }
+    bumpCombo(false); tries++;
+    if (hints < maxH) {
+      b = await tutor((fb ? fb + " " : "Not quite. ") + "Hint: " + st.hints[hints], { kind: "soc", nocount: true }); hints++; g();
+      if (useText && lvl === "m" && tries >= 2) { useText = false; b = await tutor("Let's try with choices:"); g(); }
+    } else {
+      await reveal(fb || "Good try."); break;
+    }
+  }
+}
+
+async function gameStep(st, g) {
+  if (st.game === "sort") {
+    const b = await tutor(`**${st.cfg.title}**. ${st.cfg.intro}`, { kind: "game" }); g();
+    await sortGame(b, st.cfg); g();
+  } else if (st.game === "eclipse") {
+    const b = await tutor("**Eclipse Builder**. Tap the objects to put them in a line, left to right. Can you build both kinds of eclipse?", { kind: "game" }); g();
+    await eclipseGame(b); g();
+  }
+}
+
+async function exploreStep(L, st, g) {
+  const list = L.terms.map((k) => "**" + TERMS[k].en + "**").join(" and ");
+  const b = await tutor(`Your turn to explore! Ask me anything about ${list}. I answer only from our Reader, so you get facts you can trust. Tap a question or type your own:`, { kind: "ask" }); g();
+  await new Promise((res) => {
+    const box = mk("div", "choices");
+    st.suggestions.forEach((q) => { const btn = mk("button", "choice", esc(q)); btn.type = "button"; btn.onclick = () => { if (!busy) { btn.disabled = true; send(q); } }; box.append(btn); });
+    const go = mk("button", "choice ghost", "I'm ready for the quick check →"); go.type = "button";
+    go.onclick = () => { go.disabled = true; box.querySelectorAll("button").forEach((x) => (x.disabled = true)); QA.pending = null; me("I'm ready for the quick check"); res(); };
+    box.append(go); b.append(box); scrollDown();
+  });
+}
+
+async function exitStep(L, st, g) {
+  await tutor(`Quick check: ${st.qs.length} questions. One try each. Every correct answer earns a star.`, { kind: "check" }); g();
+  let right = 0;
+  for (const [n, q] of st.qs.entries()) {
+    const b = await tutor(`**${n + 1}.** ${q.q}`, { kind: "check" }); g();
+    const i = await choices(b, q.o); g();
+    if (i === q.a) { right++; award(10 + bumpCombo(true)); await tutor("Correct! " + q.why, { wait: 300 }); }
+    else { bumpCombo(false); await tutor(`Not this time. The answer is **${q.o[q.a]}**. ${q.why}`, { wait: 300 }); }
+    g();
+  }
+  const prev = S.lessons[L.id] || {};
+  const stars = Math.max(1, right);
+  S.lessons[L.id] = { done: true, stars: Math.max(prev.stars || 0, stars) };
+  const newBadge = !S.badges.includes(L.badge.id);
+  if (newBadge) S.badges.push(L.badge.id);
+  save(); renderAll();
+  const starTxt = "★".repeat(stars) + "☆".repeat(3 - stars);
+  const b = await tutor(`Lesson complete! **${starTxt}** (${right}/${st.qs.length}).\nYou learned: ${L.terms.map((k) => `[[${k}]]`).join(", ")}. They are saved in your glossary.`, { kind: "check" }); g();
+  if (newBadge) await celebrate(L.badge, `You earned the **${L.badge.name}** badge for Lesson ${L.id.slice(1)}!`);
+  g();
+  const next = nextItem();
+  const opts = [];
+  if (next) opts.push({ l: next === FINAL ? "Play the Final: Term Match" : `Start Lesson ${next.id.slice(1)}: ${next.title}`, v: "next" });
+  opts.push({ l: "Open my glossary", v: "gloss" });
+  const v = await choices(b, [], opts);
+  if (v === "next") startItem(next); else if (v === "gloss") openGlossary();
+}
+
+/* ---------- games ---------- */
+function sortGame(b, cfg) {
+  return new Promise((res) => {
+    const items = shuffle(cfg.items);
+    const box = mk("div", "game");
+    box.innerHTML = `<div class="g-top"><span class="g-count"></span><span class="g-score"></span></div>
+      <div class="g-progress"><b></b></div><div class="g-card" aria-live="polite"></div>
+      <div class="g-bins">${cfg.bins.map((x) => `<button type="button" class="g-bin" data-b="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+      <p class="g-why"></p>`;
+    b.append(box); scrollDown();
+    let i = 0, score = 0, xp = 0;
+    const card = box.querySelector(".g-card"), why = box.querySelector(".g-why");
+    const bins = [...box.querySelectorAll(".g-bin")];
+    function show() {
+      card.className = "g-card"; card.textContent = "“" + items[i].x + "”"; why.textContent = "";
+      box.querySelector(".g-count").textContent = `Clue ${i + 1} of ${items.length}`;
+      box.querySelector(".g-score").textContent = `Score ${score}`;
+      box.querySelector(".g-progress b").style.width = (i / items.length * 100) + "%";
+      bins.forEach((x) => (x.disabled = false));
+    }
+    bins.forEach((btn) => btn.onclick = async () => {
+      bins.forEach((x) => (x.disabled = true));
+      const it = items[i], ok = btn.dataset.b === it.b;
+      if (ok) { score++; const bonus = bumpCombo(true); xp += 5 + bonus; card.classList.add("good"); why.textContent = "Correct! " + it.why + (bonus ? " Combo bonus +2!" : ""); }
+      else { bumpCombo(false); card.classList.add("bad"); why.textContent = `It's “${it.b}”. ${it.why}`; }
+      await sleep(reduced ? 600 : (ok ? 1100 : 2200));
+      i++;
+      if (i < items.length) show();
+      else {
+        box.querySelector(".g-progress b").style.width = "100%";
+        card.className = "g-card good"; card.textContent = `${score} / ${items.length} correct`;
+        why.textContent = score === items.length ? "Perfect round!" : "Nice work! Wrong answers are how we learn.";
+        box.querySelector(".g-score").textContent = `Score ${score}`;
+        award(xp); res(score);
+      }
+    });
+    show();
+  });
+}
+
+function eclipseGame(b) {
+  return new Promise((res) => {
+    const rounds = [
+      { goal: "solar", ask: "Round 1: build a **solar eclipse**, so people on Earth can't see the sun." },
+      { goal: "lunar", ask: "Round 2: build a **lunar eclipse**, so Earth's shadow covers the moon." }
+    ];
+    let r = 0, tries = 0, total = 0;
+    const box = mk("div", "game");
+    box.innerHTML = `<p class="g-ask" style="margin:0"></p>
+      <div class="slots">${[0, 1, 2].map((i) => `<button type="button" class="slot" data-i="${i}"><span class="pos">${["left", "middle", "right"][i]}</span></button>`).join("")}</div>
+      <div class="tokens"><button type="button" class="token sun" data-o="sun">Sun</button><button type="button" class="token moon" data-o="moon">Moon</button><button type="button" class="token earth" data-o="earth">Earth</button></div>
+      <div style="display:flex;gap:8px;justify-content:center"><button type="button" class="btn g-check">Check my line</button><button type="button" class="btn secondary g-reset">Clear</button></div>
+      <p class="g-why"></p><div class="g-fig"></div>`;
+    b.append(box); scrollDown();
+    const slots = [null, null, null];
+    const why = box.querySelector(".g-why"), fig = box.querySelector(".g-fig");
+    const slotEls = [...box.querySelectorAll(".slot")], tokEls = [...box.querySelectorAll(".token")];
+    const NAMES = { sun: "Sun", moon: "Moon", earth: "Earth" };
+    function paint() {
+      slotEls.forEach((el, i) => { el.classList.toggle("filled", !!slots[i]); el.innerHTML = slots[i] ? `<span class="token ${slots[i]}" style="pointer-events:none">${NAMES[slots[i]]}</span>` : `<span class="pos">${["left", "middle", "right"][i]}</span>`; });
+      tokEls.forEach((t) => (t.disabled = slots.includes(t.dataset.o)));
+    }
+    function setRound() { box.querySelector(".g-ask").innerHTML = fmt(rounds[r].ask); slots.fill(null); tries = 0; why.textContent = ""; fig.innerHTML = ""; paint(); }
+    tokEls.forEach((t) => t.onclick = () => { const k = slots.indexOf(null); if (k >= 0) { slots[k] = t.dataset.o; paint(); } });
+    slotEls.forEach((el, i) => el.onclick = () => { slots[i] = null; paint(); });
+    box.querySelector(".g-reset").onclick = () => { slots.fill(null); paint(); why.textContent = ""; };
+    box.querySelector(".g-check").onclick = async () => {
+      if (slots.includes(null)) { why.textContent = "Place all three objects first."; return; }
+      const goal = rounds[r].goal, mid = slots[1], ends = [slots[0], slots[2]];
+      const ok = goal === "solar" ? mid === "moon" : mid === "earth";
+      if (ok) {
+        const xp = (tries === 0 ? 15 : 8) + bumpCombo(true); total += xp; award(xp);
+        why.textContent = goal === "solar" ? "Correct! The moon is in the middle and blocks the sun from Earth." : "Correct! Earth is in the middle, and its shadow falls on the moon.";
+        const flip = ends[0] !== "sun";
+        fig.innerHTML = `<figure class="fig"${flip ? ' style="transform:scaleX(-1)"' : ""}>${SVG[goal]}</figure>`;
+        if (flip) fig.querySelectorAll("text").forEach((t) => t.setAttribute("transform", `scale(-1,1) translate(${-2 * t.getAttribute("x")},0)`));
+        scrollDown();
+        await sleep(reduced ? 800 : 2200);
+        r++;
+        if (r < rounds.length) setRound();
+        else { box.querySelectorAll("button").forEach((x) => (x.disabled = true)); why.textContent = "You built both eclipses! Solar: Sun – Moon – Earth. Lunar: Sun – Earth – Moon."; res(total); }
+      } else {
+        tries++; bumpCombo(false);
+        if (mid === "sun") why.textContent = "The sun gives the light, so it can't be the blocker in the middle. Try again!";
+        else if (goal === "solar") why.textContent = "With Earth in the middle, Earth's shadow falls on the moon. That's the other kind! For a solar eclipse, which object blocks the sun?";
+        else why.textContent = "With the moon in the middle, the moon blocks the sun. That's a solar eclipse! For a lunar eclipse, whose shadow covers the moon?";
+      }
+    };
+    setRound();
+  });
+}
+
+async function runFinal() {
+  const tok = ++RUN; inputWaiter = null; QA.pending = null; closeRail(); renderLessons("F");
+  chat.append(mk("div", "lesson-head", `<div class="label">Final challenge</div><h2>Term Match</h2><p>Match each English term to its ${LANGNAME[S.prefs.lang]} translation</p>`));
+  const b = await tutor("Flip two cards at a time. Find each **English term** and its **translation**. Fewer moves = more XP!", { kind: "game" });
+  if (tok !== RUN) return;
+  const keys = [ "orbit", "axis", "eclipse", "naked eye", "probe", "rotate" ];
+  const cards = shuffle(keys.flatMap((k) => [ { k, t: TERMS[k].en }, { k, t: TERMS[k][S.prefs.lang].w } ]));
+  const box = mk("div", "game");
+  box.innerHTML = `<div class="g-top"><span class="g-moves">Moves: 0</span><span class="g-pairs">Pairs: 0 / ${keys.length}</span></div><div class="mem"></div>`;
+  const grid = box.querySelector(".mem");
+  let open = [], moves = 0, pairs = 0, lock = false;
+  cards.forEach((c) => {
+    const el = mk("button", "mcard", `<span>${esc(c.t)}</span>`); el.type = "button"; el.setAttribute("aria-label", "Hidden card");
+    el.onclick = async () => {
+      if (lock || el.classList.contains("up") || el.classList.contains("ok")) return;
+      el.classList.add("up"); el.setAttribute("aria-label", c.t); open.push([el, c]);
+      if (open.length === 2) {
+        moves++; box.querySelector(".g-moves").textContent = "Moves: " + moves;
+        const [[e1, c1], [e2, c2]] = open; open = [];
+        if (c1.k === c2.k) { e1.classList.replace("up", "ok"); e2.classList.replace("up", "ok"); pairs++; box.querySelector(".g-pairs").textContent = `Pairs: ${pairs} / ${keys.length}`;
+          if (pairs === keys.length) finish(); }
+        else { lock = true; await sleep(900); e1.classList.remove("up"); e2.classList.remove("up"); e1.setAttribute("aria-label", "Hidden card"); e2.setAttribute("aria-label", "Hidden card"); lock = false; }
+      }
+    };
+    grid.append(el);
+  });
+  b.append(box); scrollDown();
+  async function finish() {
+    const xp = Math.max(10, 50 - (moves - keys.length) * 3); award(xp);
+    const prev = S.lessons.F || {};
+    const stars = moves <= 9 ? 3 : moves <= 14 ? 2 : 1;
+    S.lessons.F = { done: true, stars: Math.max(prev.stars || 0, stars) };
+    const isNew = !S.badges.includes("master"); if (isNew) S.badges.push("master");
+    save(); renderAll();
+    await tutor(`All pairs found in **${moves} moves**! ${"★".repeat(stars)}${"☆".repeat(3 - stars)}`, { kind: "check" });
+    if (isNew) await celebrate(FINAL.badge, "You finished the whole demo course. You are a **Term Master**! Bring your glossary to class.");
+  }
+}
+
+/* ============================ FREE QUESTIONS (knowledge-base tutor) ============================ */
+function hit(n, toks, stem) {
+  if (stem.startsWith("=")) return toks.includes(stem.slice(1));
+  if (stem.includes(" ")) return n.includes(stem);
+  return toks.some((t) => t.startsWith(stem));
+}
+function matchKB(n) {
+  const toks = tokens(n);
+  let best = null, bs = 0;
+  for (const e of KB) {
+    if (e.keys.every((grp) => grp.some((s) => hit(n, toks, s)))) {
+      const sc = e.keys.length + (e.w || 0);
+      if (sc > bs) { bs = sc; best = e; }
+    }
+  }
+  return best;
+}
+function findTerm(n) {
+  const toks = tokens(n);
+  const keys = Object.keys(TERMS).sort((a, b) => b.length - a.length);
+  for (const k of keys) {
+    const t = TERMS[k];
+    const forms = [ k, t.kk.w.toLowerCase(), t.ru.w.toLowerCase() ];
+    if (forms.some((f) => f.includes(" ") ? n.includes(f) : toks.some((x) => x.startsWith(f.slice(0, Math.max(5, f.length - 1)))))) return k;
+  }
+  return null;
+}
+function balance() { const t = S.soc + S.dir; return t ? S.soc / t : 0; }
+let busy = false;
+async function qa(text) {
+  busy = true;
+  try { await qaInner(text); } finally { busy = false; }
+}
+async function qaInner(text) {
+  const n = norm(text);
+  if (QA.pending && await qaPending(text, n)) return;
+  if (/^ (hi|hello|hey|salem|сәлем|салем|привет|здравствуй)[\s!,.]/.test(n)) {
+    await tutor("Hi! Ask me about **orbit**, **axis**, **eclipse**, **naked eye** or **probe**, or pick a lesson from the course map."); return;
+  }
+  if (/thank|рахмет|спасибо/.test(n)) { await tutor("You're welcome! Keep asking questions. That's how scientists learn too."); return; }
+  const term = findTerm(n);
+  if (term && /(translat|russian|kazakh|перевод|по-русски|по русски|на русском|қазақша|аудар|in kazakh|in russian|what is .* in)/.test(n)) {
+    const t = TERMS[term];
+    await tutor(`**${t.en}**\nҚазақша: **${t.kk.w}**: ${t.kk.d}\nРусский: **${t.ru.w}**: ${t.ru.d}`, { kind: "dir", src: "Senim glossary" });
+    if (!S.seen.includes(term)) { S.seen.push(term); save(); }
+    return;
+  }
+  const e = matchKB(n);
+  if (!e) {
+    if (term) { await tutor(`Here is the glossary card for **${TERMS[term].en}**:`, { kind: "dir", card: term }); return; }
+    await tutor("Hmm, I can't find that in our book. I only answer from *What's in Our Universe?*, Chapters 1–3 (the sun and Earth, the moon, and the planets closest to the sun), so I never guess. Please bring this question to class! You could ask me things like “What is an orbit?”, “Why do we have eclipses?” or “What is a probe?”");
+    return;
+  }
+  if (e.soc && balance() < 0.5) {
+    QA.pending = { e, tries: 0, hinted: false };
+    const b = await tutor(e.soc.q, { kind: "soc" });
+    const box = mk("div", "choices");
+    [ "Hint, please", "Just tell me" ].forEach((l) => { const btn = mk("button", "choice ghost", l); btn.type = "button"; btn.onclick = () => { box.querySelectorAll("button").forEach((x) => (x.disabled = true)); send(l); }; box.append(btn); });
+    b.append(box); scrollDown();
+    return;
+  }
+  await tutor(e.a, { kind: "dir", src: e.src });
+}
+async function qaPending(raw, n) {
+  const p = QA.pending, s = p.e.soc;
+  if (/hint|подсказ|кеңес/.test(n)) {
+    if (!p.hinted) { p.hinted = true; await tutor("Hint: " + s.hint, { kind: "soc", nocount: true }); return true; }
+    QA.pending = null; await tutor("Here is what the book says: " + p.e.a, { src: p.e.src }); return true;
+  }
+  if (/just tell|tell me|don.?t know|dont know|no idea|idk|не знаю|скажи|білмеймін|айтшы|show me/.test(n)) {
+    QA.pending = null; await tutor("No problem. Here is what the book says: " + p.e.a, { src: p.e.src }); return true;
+  }
+  if (/\?\s*$/.test(raw.trim())) { const e2 = matchKB(n); if (e2 && e2 !== p.e) { QA.pending = null; return false; } }
+  const ok = s.all ? s.acc.every((rx) => rx.test(n)) : s.acc.some((rx) => rx.test(n));
+  if (ok) { QA.pending = null; award(5 + bumpCombo(true)); await tutor(PRAISE[Math.floor(Math.random() * PRAISE.length)] + " " + p.e.a, { src: p.e.src }); return true; }
+  bumpCombo(false); p.tries++;
+  if (!p.hinted) { p.hinted = true; await tutor("Not quite yet. Hint: " + s.hint, { kind: "soc", nocount: true }); return true; }
+  QA.pending = null; await tutor("Good effort! Here is what the book says: " + p.e.a, { src: p.e.src }); return true;
+}
+
+function send(text) {
+  text = String(text).trim(); if (!text) return;
+  if (inputWaiter) { me(text); const w = inputWaiter; inputWaiter = null; setMode(); w(text); return; }
+  me(text); qa(text);
+}
+
+/* ============================ RENDER ============================ */
+function rankOf(xp) { let r = RANKS[0], nx = null; for (let i = 0; i < RANKS.length; i++) { if (xp >= RANKS[i][0]) { r = RANKS[i]; nx = RANKS[i + 1] || null; } } return { r, nx }; }
+function renderHeader() {
+  $("#xpPill").textContent = S.xp + " XP";
+  const { r, nx } = rankOf(S.xp);
+  $("#rankPill").textContent = r[1];
+  $("#meRank").textContent = nx ? `${r[1]} · ${nx[0] - S.xp} XP to ${nx[1]}` : `${r[1]} · top rank!`;
+  $("#rankBar").style.width = nx ? ((S.xp - r[0]) / (nx[0] - r[0]) * 100) + "%" : "100%";
+}
+function unlocked(idx) {
+  if (ROSTER[LOGIN] && ROSTER[LOGIN].unlockAll) return true;
+  if (idx === 0) return true;
+  if (idx === LESSONS.length) return LESSONS.every((l) => S.lessons[l.id] && S.lessons[l.id].done);
+  return !!(S.lessons[LESSONS[idx - 1].id] && S.lessons[LESSONS[idx - 1].id].done);
+}
+function starsHTML(n) { return `<span class="stars" aria-label="${n} of 3 stars">${"★".repeat(n)}<span class="off">${"★".repeat(3 - n)}</span></span>`; }
+let ACTIVE = null;
+function renderLessons(active) {
+  if (active !== undefined) ACTIVE = active;
+  const list = $("#lessonList"); list.innerHTML = "";
+  [ ...LESSONS, FINAL ].forEach((L, idx) => {
+    const st = S.lessons[L.id] || {};
+    const open = unlocked(idx);
+    const btn = mk("button", "lesson" + (st.done ? " done" : "") + (ACTIVE === L.id ? " active" : ""));
+    btn.type = "button"; btn.disabled = !open;
+    const termsTxt = L.terms ? L.terms.map((k) => TERMS[k].en).join(" · ") : L.sub;
+    btn.innerHTML = `<span class="num">${st.done ? "✓" : (L.id === "F" ? "★" : L.id.slice(1))}</span>
+      <span><span class="t">${esc(L.title)}</span><br><span class="s">${open ? esc(termsTxt) : (idx === LESSONS.length ? "Locked: finish all 3 lessons" : `Locked: finish Lesson ${idx} first`)}</span>${st.done ? "<br>" + starsHTML(st.stars) : ""}</span>`;
+    btn.onclick = () => startItem(L);
+    list.append(btn);
+  });
+}
+function renderBadges() {
+  const all = [ ...LESSONS.map((l) => l.badge), FINAL.badge ];
+  $("#badgeList").innerHTML = all.map((bd) => `<div class="badge${S.badges.includes(bd.id) ? "" : " off"}">${badgeSVG(bd.id)}<span>${esc(bd.name)}</span></div>`).join("");
+}
+function renderBalance() {
+  const t = S.soc + S.dir, a = t ? Math.round(S.soc / t * 100) : 50;
+  $("#balA").style.width = a + "%"; $("#balB").style.width = (100 - a) + "%";
+  $("#balAt").textContent = `Think-it-through ${t ? a : 0}%`;
+  $("#balBt").textContent = `Explanations ${t ? 100 - a : 0}%`;
+}
+function renderSettings() {
+  document.querySelectorAll("#langSeg button").forEach((b) => b.classList.toggle("on", b.dataset.v === S.prefs.lang));
+  document.querySelectorAll("#levelSeg button").forEach((b) => b.classList.toggle("on", b.dataset.v === S.prefs.level));
+}
+function renderAll() { $("#meName").textContent = ROSTER[LOGIN].name; renderHeader(); renderLessons(); renderBadges(); renderBalance(); renderSettings(); }
+
+function nextItem() {
+  for (let i = 0; i < LESSONS.length; i++) if (!(S.lessons[LESSONS[i].id] || {}).done) return unlocked(i) ? LESSONS[i] : null;
+  return (S.lessons.F || {}).done ? null : FINAL;
+}
+function startItem(L) { if (L === FINAL) runFinal(); else runLesson(L); }
+
+function celebrate(badge, text) {
+  return new Promise((res) => {
+    const ov = $("#overlay");
+    ov.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="bdT">${badgeSVG(badge.id)}<div class="label">New badge</div><h2 id="bdT">${esc(badge.name)}</h2><p style="margin:0">${fmt(text)}</p><button class="btn" type="button" id="bdOk">Continue</button></div>`;
+    ov.hidden = false; $("#bdOk").focus();
+    $("#bdOk").onclick = () => { ov.hidden = true; ov.innerHTML = ""; res(); };
+  });
+}
+function openGlossary() {
+  const ov = $("#overlay");
+  const keys = Object.keys(TERMS);
+  ov.innerHTML = `<div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="glT">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 id="glT" style="font-size:20px">My glossary</h2><button class="btn secondary" type="button" id="glClose">Close</button></div>
+    <div class="field"><label for="glFind">Find a term</label><input id="glFind" placeholder="orbit, затмение, зонд…"></div>
+    <div class="gloss-list" id="glList"></div>
+    <p class="label" style="margin:0">Terms you've met in lessons are marked “learned”. Source: CKLA Grade 3 Unit 7 Reader &amp; Teacher Guide.</p></div>`;
+  ov.hidden = false;
+  const draw = (f) => {
+    const q = (f || "").toLowerCase();
+    $("#glList").innerHTML = keys.filter((k) => !q || [ k, TERMS[k].kk.w, TERMS[k].ru.w ].join(" ").toLowerCase().includes(q)).map((k) => {
+      const t = TERMS[k];
+      return `<div class="gl pref-${S.prefs.lang}"><div class="w"><b>${esc(t.en)}</b><span class="tc-pos">${esc(t.pos)}</span>${S.seen.includes(k) ? '<span class="tag tag-check" style="margin:0">learned</span>' : ""}<button type="button" class="say" data-say="${esc(t.en)}">Hear it</button></div>
+        <div>${esc(pick(t.def))}</div>
+        <div class="tr"><span>KZ</span><span class="kk">${esc(t.kk.w)}: ${esc(t.kk.d)}</span><span>RU</span><span class="ru">${esc(t.ru.w)}: ${esc(t.ru.d)}</span></div></div>`;
+    }).join("") || "<p>No term found.</p>";
+  };
+  draw(); $("#glFind").oninput = (e) => draw(e.target.value);
+  $("#glClose").onclick = () => { ov.hidden = true; ov.innerHTML = ""; };
+  $("#glClose").focus();
+}
+function closeRail() { $("#rail").classList.remove("open"); }
+
+/* ============================ SCREENS ============================ */
+function show(id) { [ "home", "login", "quiz", "app" ].forEach((s) => ($("#" + s).hidden = s !== id)); }
+
+$("#openApp").onclick = () => {
+  const last = store.get("senim:session");
+  if (last && ROSTER[last]) { LOGIN = last; S = store.get("senim:" + LOGIN) || fresh(); if (S.prefs) return enterApp(); return startQuiz(); }
+  show("login"); $("#loginName").focus();
+};
+$("#loginForm").onsubmit = (e) => {
+  e.preventDefault();
+  const name = $("#loginName").value.trim().toLowerCase(), code = $("#loginCode").value.trim();
+  const acc = ROSTER[name];
+  if (!name || !code) { $("#loginErr").textContent = "Enter your login and your sign-in code."; return; }
+  if (!acc || acc.code !== code) { $("#loginErr").textContent = "That login and code don't match. Check the card from your teacher and try again."; return; }
+  $("#loginErr").textContent = "";
+  LOGIN = name; store.set("senim:session", LOGIN);
+  S = store.get("senim:" + LOGIN) || fresh();
+  if (S.prefs) enterApp(); else startQuiz();
+};
+
+/* ---------- setup quiz ---------- */
+function startQuiz() {
+  show("quiz");
+  const ans = {};
+  const Q = [
+    { key: "lang", title: "Which glossary language do you prefer?", sub: "New English terms will come with a translation in this language.",
+      opts: [ { v: "kk", big: "Қазақша", sm: "Kazakh" }, { v: "ru", big: "Русский", sm: "Russian" } ] },
+    { key: "self", title: "How easy is it for you to read science texts in English?",
+      opts: [ { v: 0, big: "It's hard", sm: "I need simple words and translations" }, { v: 1, big: "It's OK", sm: "I understand most of it" }, { v: 2, big: "It's easy", sm: "I read science texts without problems" } ] },
+    { key: "c1", title: "Quick reading check (1 of 2)", quote: "“The sun's light and heat give life to plants and animals.”", sub: "What does this sentence mean?",
+      opts: [ { v: 1, big: "", sm: "Plants and animals need the sun's light and heat to live." }, { v: 0, big: "", sm: "Plants and animals give the sun light." }, { v: 0, big: "", sm: "The sun is a plant." } ] },
+    { key: "c2", title: "Quick reading check (2 of 2)", quote: "“Scientists had to change their ideas to ___ the new facts.”", sub: "Choose the best word.",
+      opts: [ { v: 0, big: "", sm: "forget" }, { v: 1, big: "", sm: "fit" }, { v: 0, big: "", sm: "fear" } ] }
+  ];
+  let i = 0;
+  const panel = $("#quizPanel");
+  function draw() {
+    const q = Q[i];
+    panel.innerHTML = `<div class="dots">${Q.map((_, k) => `<i class="${k <= i ? "on" : ""}"></i>`).join("")}<i class="${i >= Q.length ? "on" : ""}"></i></div>
+      <div><div class="label">Set up · step ${i + 1} of ${Q.length}</div><h1 style="font-size:21px;margin-top:6px">${esc(q.title)}</h1></div>
+      ${q.quote ? `<p class="quote">${esc(q.quote)}</p>` : ""}${q.sub ? `<p style="margin:0;color:var(--ink-2)">${esc(q.sub)}</p>` : ""}
+      <div class="opts">${q.opts.map((o, k) => `<button type="button" class="opt" data-k="${k}">${o.big ? `<span class="big">${esc(o.big)}</span>` : ""}<span${o.big ? ' style="color:var(--ink-2);font-size:14px"' : ""}>${esc(o.sm)}</span></button>`).join("")}</div>`;
+    panel.querySelectorAll(".opt").forEach((b) => b.onclick = () => { ans[q.key] = q.opts[+b.dataset.k].v; i++; i < Q.length ? draw() : result(); });
+    panel.querySelector(".opt").focus();
+  }
+  function result() {
+    const score = ans.self + ans.c1 + ans.c2;
+    const level = score <= 1 ? "s" : score <= 3 ? "m" : "a";
+    const what = { s: "Simple English, translations right next to every new term, up to 3 hints, and answer choices for every question.",
+                   m: "Standard English, translations on tap, 2 hints, and you type some answers yourself.",
+                   a: "Full book definitions, translations on tap, 1 hint, and more typed answers." }[level];
+    panel.innerHTML = `<div class="dots">${Q.map(() => '<i class="on"></i>').join("")}<i class="on"></i></div>
+      <div><div class="label">Your learning plan</div><h1 style="font-size:22px;margin-top:6px">Ready, ${esc(ROSTER[LOGIN].name)}!</h1></div>
+      <div class="summary"><div><span>Glossary</span><strong>${LANGNAME[ans.lang]}</strong></div><div><span>English level</span><strong>${LEVELS[level].name}</strong></div></div>
+      <p style="margin:0;color:var(--ink-2)">${what} You can change both any time in the menu.</p>
+      <button class="btn" type="button" id="goApp">Start learning</button>`;
+    $("#goApp").focus();
+    $("#goApp").onclick = () => { S.prefs = { lang: ans.lang, level }; save(); enterApp(true); };
+  }
+  draw();
+}
+
+/* ---------- app ---------- */
+async function enterApp(first) {
+  show("app"); renderAll(); chat.innerHTML = ""; setMode();
+  const name = ROSTER[LOGIN].name;
+  const next = nextItem();
+  const b = await tutor(first
+    ? `Hi ${name}! I'm **Senim**, your space-terms tutor. Our demo course has **3 short lessons** from the Reader *What's in Our Universe?* Each lesson teaches 1–2 key terms, then you play a game and take a quick check.\nSometimes I'll answer your question with a question, to help you think it through. If you're stuck, ask for a **hint** or say **“just tell me”**. Your glossary is in **${LANGNAME[S.prefs.lang]}**.`
+    : `Welcome back, ${name}! You have **${S.xp} XP**. ${next ? "Ready to continue?" : "You finished the course! Replay any lesson to earn more stars, or ask me questions."}`);
+  const opts = [];
+  if (next) opts.push({ l: next === FINAL ? "Play the Final: Term Match" : `Start Lesson ${next.id.slice(1)}: ${next.title}`, v: "go" });
+  opts.push({ l: "Open my glossary", v: "gloss" });
+  const v = await choices(b, [], opts);
+  if (v === "go") startItem(next); else openGlossary();
+}
+$("#askForm").onsubmit = (e) => { e.preventDefault(); const v = $("#askInput").value; $("#askInput").value = ""; send(v); };
+document.addEventListener("click", (e) => {
+  const t = e.target.closest(".term");
+  document.querySelectorAll(".term.show").forEach((x) => { if (x !== t) x.classList.remove("show"); });
+  if (t) t.classList.toggle("show");
+  const s = e.target.closest("[data-say]"); if (s) sayAloud(s.dataset.say);
+});
+$("#menuBtn").onclick = () => $("#rail").classList.toggle("open");
+$("#glossBtn").onclick = () => { closeRail(); openGlossary(); };
+$("#langSeg").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; S.prefs.lang = b.dataset.v; save(); renderSettings(); toast("Glossary: " + LANGNAME[b.dataset.v]); };
+$("#levelSeg").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; S.prefs.level = b.dataset.v; save(); renderSettings(); toast("Level: " + LEVELS[b.dataset.v].name); };
+$("#logoutBtn").onclick = () => { RUN++; inputWaiter = null; store.del("senim:session"); LOGIN = null; S = null; $("#loginCode").value = ""; closeRail(); show("home"); };
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#overlay").hidden && $("#glClose")) $("#glClose").click(); });
+</script>
+</body>
+</html>
