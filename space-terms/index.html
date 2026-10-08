@@ -178,6 +178,12 @@ aside.rail { border-right: 1px solid var(--line); background: var(--surface); ov
 .term.show::after { content: attr(data-tr); position: absolute; left: 0; bottom: calc(100% + 6px); white-space: nowrap; background: var(--ink); color: var(--surface); font-weight: 600; font-size: 13px; padding: 4px 8px; border-radius: 6px; z-index: 5; }
 .trn { color: var(--soc); font-size: .9em; font-weight: 600; }
 
+.trbtn { display: block; width: fit-content; margin-top: 8px; border: 0; background: none; padding: 2px 0; font-size: 13px; font-weight: 600; color: var(--soc); text-decoration: underline; text-underline-offset: 3px; }
+.trbox { margin-top: 6px; padding: 10px 12px; border-radius: 10px; background: var(--soc-soft); }
+.trbox .lang { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--soc); }
+.choice .trn { font-weight: 500; }
+.choice.picked .trn { color: inherit; }
+
 /* term card */
 .tcard { margin-top: 4px; border: 2px solid var(--accent); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; background: var(--surface); }
 .tc-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
@@ -463,121 +469,252 @@ const TERMS = {
     ru: { w: "телескоп", d: "Прибор, который помогает лучше рассмотреть далёкие объекты, например планеты." } }
 };
 
-/* Free-question knowledge base. keys = groups of stems; every group must match.
-   "=word" means exact token. soc = Socratic version (asked when balance needs it). */
+/* Every tutor text is t(English, Kazakh, Russian [, Starter English]) so students can ask for a translation. */
+const t = (m, kk, ru, s) => (s ? { s, m, kk, ru } : { m, kk, ru });
+
+/* Small phrases the tutor reuses */
+const P = {
+  praise: [
+    t("Yes! Great job! 🎉", "Иә! Жарайсың! 🎉", "Да! Молодец! 🎉"),
+    t("Correct! Well done! 👏", "Дұрыс! Өте жақсы! 👏", "Правильно! Отлично! 👏"),
+    t("You got it! 👍", "Таптың! 👍", "Верно! 👍"),
+    t("Super! ⭐", "Керемет! ⭐", "Супер! ⭐"),
+    t("Exactly right! 😊", "Дәл солай! 😊", "Точно! 😊")
+  ],
+  wrong: t("Hmm, that's not correct. 🙂 Our book says something different.", "Хм, бұл дұрыс емес. 🙂 Кітабымызда басқаша жазылған.", "Хм, это неправильно. 🙂 В нашей книге написано по-другому."),
+  revise: t("📖 Let's look again:", "📖 Тағы бір қарайық:", "📖 Давай посмотрим ещё раз:"),
+  again: t("Now try again:", "Енді тағы байқап көр:", "Теперь попробуй ещё раз:"),
+  hint: t("💡 Hint:", "💡 Кеңес:", "💡 Подсказка:"),
+  reveal: t("No worries! Here is the answer:", "Ештеңе етпейді! Міне, жауабы:", "Ничего страшного! Вот ответ:"),
+  choicesNow: t("Here are some choices. Pick one:", "Міне, жауап нұсқалары. Біреуін таңда:", "Вот варианты ответа. Выбери один:"),
+  right: t("The right answer is", "Дұрыс жауап:", "Правильный ответ:"),
+  checkBook: t("Let's check that with our book! 📖", "Мұны кітаппен тексерейік! 📖", "Давай проверим это по книге! 📖"),
+  bookSays: t("Here is what the book says:", "Кітапта былай жазылған:", "Вот что написано в книге:"),
+  stillWrong: t("That's still not correct, but good try! 💪", "Бұл әлі дұрыс емес, бірақ жақсы талпыныс! 💪", "Это всё ещё неправильно, но хорошая попытка! 💪"),
+  outOfBook: t("Hmm, I can't find that in our book. 📖 I only answer from *What's in Our Universe?* Chapters 1–3, so I never guess. Please ask your teacher in class! You can ask me things like “What is an orbit?” or “What is a probe?”",
+    "Хм, мен мұны кітабымыздан таба алмадым. 📖 Мен тек *What's in Our Universe?* кітабының 1–3 тарауларынан жауап беремін, сондықтан ешқашан болжап айтпаймын. Бұл сұрақты сабақта мұғаліміңнен сұра! Менен мынадай сұрақтар қоюға болады: «What is an orbit?» немесе «What is a probe?»",
+    "Хм, я не нашёл этого в нашей книге. 📖 Я отвечаю только по книге *What's in Our Universe?*, главы 1–3, поэтому никогда не угадываю. Спроси, пожалуйста, учителя на уроке! Меня можно спросить, например: «What is an orbit?» или «What is a probe?»"),
+  hello: t("Hi there! 👋 Ask me about **orbit**, **axis**, **eclipse**, **naked eye** or **probe**. Or pick a lesson from the menu.",
+    "Сәлем! 👋 Менен **orbit**, **axis**, **eclipse**, **naked eye** немесе **probe** туралы сұра. Не болмаса мәзірден сабақ таңда.",
+    "Привет! 👋 Спроси меня про **orbit**, **axis**, **eclipse**, **naked eye** или **probe**. Или выбери урок в меню."),
+  thanks: t("You're welcome! 😊 Keep asking questions. That's how scientists learn, too!", "Оқасы жоқ! 😊 Сұрақ қоя бер. Ғалымдар да солай үйренеді!", "Пожалуйста! 😊 Задавай вопросы дальше. Учёные тоже так учатся!"),
+  nothingToTr: t("There's nothing to translate yet. 🙂", "Әзірге аударатын ештеңе жоқ. 🙂", "Пока нечего переводить. 🙂"),
+  partialTr: t("I can't translate all of this message, but here are the key words:", "Бұл хабарды толық аудара алмаймын, бірақ міне, негізгі сөздер:", "Я не могу перевести всё сообщение, но вот главные слова:"),
+  quickCheck: t("Quick check! ✅ 3 questions, one try each. Every right answer = a star ⭐", "Жылдам тексеру! ✅ 3 сұрақ, әрқайсысына бір мүмкіндік. Әр дұрыс жауап = бір жұлдыз ⭐", "Быстрая проверка! ✅ 3 вопроса, одна попытка на каждый. Каждый правильный ответ = звезда ⭐"),
+  done: t("Lesson complete! 🎉", "Сабақ аяқталды! 🎉", "Урок пройден! 🎉"),
+  learned: t("You learned:", "Сен үйрендің:", "Ты выучил(а):"),
+  saved: t("They are saved in your glossary. 📒", "Олар сөздігіңде сақталды. 📒", "Они сохранены в твоём словаре. 📒"),
+  keyTerm: t("New word!", "Жаңа сөз!", "Новое слово!")
+};
+function exploreText(terms) {
+  return t(`Your turn! 🙋 Ask me anything about ${terms}. I only use our Reader, so my answers match the book. Tap a question or type your own:`,
+    `Сенің кезегің! 🙋 ${terms} туралы кез келген сұрақ қой. Мен тек Оқулықты қолданамын, сондықтан жауаптарым кітапқа сай. Сұрақты бас немесе өзіңдікін жаз:`,
+    `Твоя очередь! 🙋 Спроси меня что угодно про ${terms}. Я использую только нашу книгу, поэтому ответы — как в книге. Нажми на вопрос или напиши свой:`);
+}
+
+/* Free-question knowledge base (Reader Ch. 1-3 only). keys = groups of stems; every group must match.
+   "=word" means exact token. soc = Socratic version, asked when the guided/explained balance needs it. */
 const KB = [
   // ---------- Chapter 1 ----------
   { keys: [["orbit", "орбит"], ["rotat", "spin", "turn", "вращ"]], w: 1, src: "Reader, Ch. 1, pp. 10–12",
-    a: "Earth moves in **two** ways. It **orbits** the sun: it travels on a curved path around the sun, and one trip takes about 365 days, one year. It also **rotates**: it spins on its axis, and one full spin takes one day. Orbiting gives us the year; rotating gives us day and night.",
-    soc: { q: "Good one to think about. Earth orbits the sun **and** rotates on its axis. One of these takes **one day** and the other takes **one year**. Which is which?", acc: [/day/, /year/], all: true,
-      hint: "One full spin on the axis turns your side of Earth to the sun and away again: one daytime and one nighttime. How long is that?" } },
+    a: t("Earth moves in **two** ways. 🌍\n• It **orbits** the sun: one trip takes 365 days = 1 year.\n• It **rotates** (spins) on its axis: one spin takes 1 day.\nOrbiting gives us the year. Rotating gives us day and night.",
+      "Жер **екі** жолмен қозғалады. 🌍\n• Ол Күнді **орбита** бойымен айналады: бір айналым 365 күн = 1 жыл.\n• Ол өз **осінен айналады**: бір айналым 1 тәулік.\nОрбита бізге жылды береді. Өз осінен айналу күн мен түнді береді.",
+      "Земля движется **двумя** способами. 🌍\n• Она движется по **орбите** вокруг Солнца: один круг — 365 дней = 1 год.\n• Она **вращается** вокруг своей оси: один оборот — 1 день.\nОрбита даёт нам год. Вращение даёт день и ночь."),
+    soc: { q: t("Good question! Let's think. 🤔 Earth orbits the sun **and** spins on its axis. One takes **one day**, the other takes **one year**. Which is which?",
+        "Жақсы сұрақ! Ойланайық. 🤔 Жер Күнді айналады **және** өз осінен айналады. Біреуі **бір тәулік**, екіншісі **бір жыл** алады. Қайсысы қайсы?",
+        "Хороший вопрос! Давай подумаем. 🤔 Земля движется вокруг Солнца **и** вращается вокруг оси. Одно занимает **один день**, другое — **один год**. Что есть что?"),
+      acc: [/day|күн|тәулік|день|сутк/, /year|жыл|год/], all: true,
+      hint: t("One spin turns your side to the sun and away again: one day and one night. 🌞🌙", "Бір айналым сенің жағыңды Күнге бұрып, қайта алып кетеді: бір күндіз және бір түн. 🌞🌙", "Один оборот поворачивает твою сторону к Солнцу и обратно: один день и одна ночь. 🌞🌙") } },
   { keys: [["365", "year", "how many days", "how long", "жыл", "год"]], src: "Reader, Ch. 1, p. 12",
-    a: "It takes Earth about **365 days**, which is **one year**, to orbit the sun once.",
-    soc: { q: "Let's work it out. Earth needs about 365 days to go once around the sun. What do we call 365 days?", acc: [/year|жыл|год/], hint: "Your birthday comes once every ___." } },
+    a: t("It takes Earth about **365 days** to go around the sun once. That is **one year**. 📅", "Жер Күнді бір рет айналып шығуға шамамен **365 күн** жұмсайды. Бұл — **бір жыл**. 📅", "Земле нужно около **365 дней**, чтобы один раз обойти Солнце. Это **один год**. 📅"),
+    soc: { q: t("Let's work it out! Earth needs about 365 days to go around the sun once. What do we call 365 days?", "Бірге шешейік! Жер Күнді бір айналуға шамамен 365 күн жұмсайды. 365 күнді не деп атаймыз?", "Давай разберёмся! Земле нужно около 365 дней, чтобы обойти Солнце. Как мы называем 365 дней?"),
+      acc: [/year|жыл|год/], hint: t("Think about your birthday 🎂. How often does it come?", "Туған күніңді ойла 🎂. Ол қаншада бір рет келеді?", "Вспомни свой день рождения 🎂. Как часто он бывает?") } },
   { keys: [["orbit", "орбит"]], src: "Reader, Ch. 1, p. 10 · Ch. 2, p. 18",
-    a: "An **orbit** is the curved path something in space takes around another object. All eight planets, including Earth, orbit the sun. The moon orbits Earth.",
-    soc: { q: "The book says planets “circle, or orbit, around the sun.” So what shape is an orbit like, and what is in the middle of Earth's orbit?", acc: [/circ|round|curv|ring/, /sun|күн|солн/], all: false,
-      hint: "Look at the word the book puts right before “or orbit”: “___, or orbit”. And what is in the center of the solar system?" } },
+    a: t("An **orbit** is the curved path an object in space takes around another object. 🪐 All 8 planets orbit the sun. The moon orbits Earth.",
+      "**Orbit** (орбита) — ғарыштағы бір дененің басқа дененің айналасында жүретін қисық жолы. 🪐 Барлық 8 ғаламшар Күнді айналады. Ай Жерді айналады.",
+      "**Orbit** (орбита) — это изогнутый путь, по которому тело в космосе движется вокруг другого тела. 🪐 Все 8 планет движутся вокруг Солнца. Луна — вокруг Земли."),
+    soc: { q: t("The book says planets “circle, or orbit, around the sun.” So what shape is an orbit like? And what is in the middle of Earth's orbit?",
+        "Кітапта ғаламшарлар Күнді «circle, or orbit» деп жазылған. Сонда орбита қандай пішінге ұқсайды? Жер орбитасының ортасында не бар?",
+        "В книге сказано, что планеты «circle, or orbit, around the sun». На какую фигуру похожа орбита? И что в центре орбиты Земли?"),
+      acc: [/\b(circle|circles|circular|round|curved?|ring)\b|шеңбер|дөңгелек|круг/, /\bsun\b|күн|солн/], all: false,
+      hint: t("Look at the word before “or orbit”. And what is in the center of the solar system? ☀️", "“or orbit” алдындағы сөзге қара. Күн жүйесінің ортасында не тұр? ☀️", "Посмотри на слово перед “or orbit”. А что в центре Солнечной системы? ☀️") } },
   { keys: [["axis", "axes", "ось", "осі", "осьт"]], src: "Reader, Ch. 1, pp. 12–14",
-    a: "An **axis** is an imaginary straight line through the middle of an object. The object spins around it. Earth spins on its axis once a day, like a toy top spinning on the floor. Earth's axis is **tilted**, and that tilt gives us the seasons.",
-    soc: { q: "Think of a toy top spinning on the floor. Is there a real stick through Earth? So is the axis a real line or an imaginary one?", acc: [/imagin|not real|pretend|invisible|no stick|isn.?t real|ойша|воображ/],
-      hint: "The book's definition starts: “an ___ straight line through the middle of an object”." } },
+    a: t("An **axis** is an imaginary straight line through the middle of an object. The object spins around it, like a toy top. 🌀 Earth spins on its axis once a day. Earth's axis is tilted, and that gives us the seasons.",
+      "**Axis** (ось) — заттың ортасынан өтетін ойша түзу сызық. Зат зырылдауық сияқты соны айналады. 🌀 Жер өз осінен тәулігіне бір рет айналады. Жердің осі көлбеу, сондықтан жыл мезгілдері болады.",
+      "**Axis** (ось) — это воображаемая прямая линия через середину объекта. Объект вращается вокруг неё, как юла. 🌀 Земля поворачивается вокруг оси один раз в день. Ось Земли наклонена, поэтому бывают времена года."),
+    soc: { q: t("Think of a spinning toy top. Is there a real stick through Earth? So is the axis a real line or an imaginary line?",
+        "Айналып тұрған зырылдауықты елестет. Жердің ішінен шын таяқ өте ме? Сонда ось — шын сызық па, әлде ойша сызық па?",
+        "Представь крутящуюся юлу. Разве через Землю проходит настоящая палка? Так ось — настоящая линия или воображаемая?"),
+      acc: [/imagin|not real|pretend|invisible|no stick|isn.?t real|ойша|ойдағы|воображ|ненастоящ/],
+      hint: t("The book's definition starts: “an ___ straight line…”", "Кітаптағы анықтама былай басталады: “an ___ straight line…”", "Определение в книге начинается так: “an ___ straight line…”") } },
   { keys: [["rotat", "spin", "вращ"]], src: "Reader, Ch. 1, p. 12",
-    a: "To **rotate** means to turn about an axis or a center. Earth rotates (spins) on its axis. One complete rotation takes **one day**. As it rotates, different parts of Earth face the sun.",
-    soc: { q: "If Earth makes one complete rotation on its axis, how much time passes: a day, a month or a year?", acc: [/day|күн|день|сутк/], hint: "The book says: “It takes one ___ for Earth to make one complete rotation on its axis.”" } },
+    a: t("To **rotate** means to turn around an axis or a center. Earth rotates (spins) on its axis. One full spin takes **one day**.",
+      "**Rotate** (айналу) — ось немесе орталық төңірегінде айналу. Жер өз осінен айналады. Бір толық айналым **бір тәулік** алады.",
+      "**Rotate** (вращаться) — поворачиваться вокруг оси или центра. Земля вращается вокруг своей оси. Один полный оборот занимает **один день**."),
+    soc: { q: t("If Earth spins once on its axis, how much time passes: a day, a month or a year?", "Жер өз осінен бір рет айналса, қанша уақыт өтеді: бір тәулік, бір ай әлде бір жыл?", "Если Земля один раз повернётся вокруг оси, сколько пройдёт времени: день, месяц или год?"),
+      acc: [/day|күн|тәулік|день|сутк/], hint: t("The book says: “It takes one ___ for Earth to make one complete rotation on its axis.”", "Кітапта: «Жер өз осінен бір рет толық айналуға бір ___ жұмсайды».", "В книге: «Земле нужен один ___, чтобы сделать полный оборот вокруг оси».") } },
   { keys: [["day", "night", "dark", "daytime", "nighttime", "ночь", "түн"]], src: "Reader, Ch. 1, p. 12",
-    a: "Day and night come from Earth **rotating** on its axis. The side of Earth facing the sun gets sunlight, so it is daytime there. The side facing away gets no sunlight, so it is nighttime. When it is daytime where we live, it is nighttime on the other side of Earth.",
-    soc: { q: "Let's figure it out. As Earth spins, one side faces the sun and gets sunlight. What happens on the side facing **away** from the sun?", acc: [/night|dark|no (sun)?light|ночь|түн|темн|қараңғ/],
-      hint: "Does any sunlight reach a side that is turned away from the sun?" } },
-  { keys: [["season", "summer", "winter", "spring", "tilt", "жаз", "қыс", "лет", "зим", "сезон", "маусым"]], src: "Reader, Ch. 1, p. 14",
-    a: "Earth's axis is **tilted** (tipped to one side). When your part of Earth is tilted **toward** the sun, the sunlight is more direct and feels hotter, so it is summer. When it is tilted **away** from the sun, there is less sunlight, so it is winter. So the tilt of the axis creates the seasons.",
-    soc: { q: "Earth's axis is tilted. When your part of Earth leans **toward** the sun, the sunlight is more direct. Which season do you think that makes?", acc: [/summer|hot|warm|жаз|лет/], hint: "More direct sunlight feels hotter. Which season is the hottest?" } },
+    a: t("Day and night happen because Earth **spins** on its axis. 🌞🌙 The side facing the sun has light, so it is day. The side facing away gets no sunlight, so it is night. When it's day here, it's night on the other side of Earth!",
+      "Күн мен түн Жер өз осінен **айналғандықтан** болады. 🌞🌙 Күнге қараған жағы жарық, сондықтан күндіз. Күннен теріс қараған жағына күн сәулесі түспейді, сондықтан түн. Бізде күндіз болғанда, Жердің арғы жағында түн!",
+      "День и ночь бывают, потому что Земля **вращается** вокруг оси. 🌞🌙 Сторона, повёрнутая к Солнцу, освещена — там день. На другую сторону солнечный свет не попадает — там ночь. Когда у нас день, на другой стороне Земли ночь!"),
+    soc: { q: t("Let's figure it out! As Earth spins, one side faces the sun and gets sunlight. What happens on the side facing **away** from the sun?",
+        "Бірге шешейік! Жер айналғанда бір жағы Күнге қарап, күн сәулесін алады. Ал Күннен **теріс** қараған жағында не болады?",
+        "Давай разберёмся! Когда Земля вращается, одна сторона смотрит на Солнце и получает свет. А что на стороне, которая смотрит **от** Солнца?"),
+      acc: [/night|dark|no (sun)?light|ночь|түн|темн|қараңғ/], hint: t("Can sunlight reach a side that is turned away from the sun?", "Күн сәулесі Күннен теріс бұрылған жаққа жете ала ма?", "Может ли солнечный свет попасть на сторону, отвёрнутую от Солнца?") } },
+  { keys: [["season", "summer", "winter", "spring", "tilt", "жаз", "қыс", "лет", "зим", "сезон", "маусым", "мезгіл"]], src: "Reader, Ch. 1, p. 14",
+    a: t("Earth's axis is **tilted**. It leans to one side. When our part of Earth leans **toward** the sun, the sunlight is stronger and it is summer ☀️. When it leans **away**, there is less sunlight and it is winter ❄️. So the tilt makes the seasons.",
+      "Жердің осі **көлбеу** — бір жағына қисайған. Біздің бөлігіміз Күнге **қарай** қисайғанда, күн сәулесі күштірек түседі де, жаз болады ☀️. Күннен **алыс** қисайғанда, күн сәулесі азаяды да, қыс болады ❄️. Сонымен, жыл мезгілдерін осьтің көлбеулігі жасайды.",
+      "Ось Земли **наклонена** — она немного наклонена в одну сторону. Когда наша часть Земли наклонена **к** Солнцу, свет падает прямее, и наступает лето ☀️. Когда **от** Солнца — света меньше, и наступает зима ❄️. Так наклон создаёт времена года."),
+    soc: { q: t("Earth's axis is tilted. When your part of Earth leans **toward** the sun, the sunlight is stronger. Which season is that?", "Жердің осі көлбеу. Сенің бөлігің Күнге **қарай** қисайғанда, күн сәулесі күштірек болады. Бұл қай мезгіл?", "Ось Земли наклонена. Когда твоя часть Земли наклонена **к** Солнцу, свет сильнее. Какое это время года?"),
+      acc: [/summer|\bhot|warm|жаз|лет/], hint: t("Stronger sunlight feels hotter. Which season is the hottest? 🏖️", "Күшті күн сәулесі ыстығырақ. Ең ыстық мезгіл қайсы? 🏖️", "Сильный солнечный свет — жарче. Какое время года самое жаркое? 🏖️") } },
   { keys: [["solar", "солнеч"], ["system", "жүйе", "систем"]], src: "Reader, Ch. 1, p. 10",
-    a: "The **solar system** is the sun, the planets that orbit it, and other objects in space that orbit the sun, like asteroids and meteors. There are eight planets, and Earth is one of them." },
+    a: t("The **solar system** is the sun, the 8 planets that orbit it, and other objects like asteroids and meteors. Earth is one of the 8 planets. 🪐",
+      "**Solar system** (Күн жүйесі) — Күн, оны айналатын 8 ғаламшар және астероидтар мен метеорлар сияқты басқа денелер. Жер — сол 8 ғаламшардың бірі. 🪐",
+      "**Solar system** (Солнечная система) — это Солнце, 8 планет вокруг него и другие тела, например астероиды и метеоры. Земля — одна из 8 планет. 🪐") },
   { keys: [["solar", "=sol"]], src: "Reader, Ch. 1, p. 10",
-    a: "The word **solar** has the Latin root *sol*, which means “the sun.” Everything in the solar system relates to the sun. A **solar** eclipse is an eclipse of the sun.",
-    soc: { q: "The word *solar* has a Latin root, *sol*. Can you guess what *sol* means? Think: what is in the center of the solar system?", acc: [/sun|күн|солн/], hint: "It is the star in the center, the one the eight planets orbit." } },
+    a: t("**Solar** comes from the Latin word *sol*, which means “the sun.” ☀️ So the solar system is the sun's system, and a solar eclipse is an eclipse of the sun.",
+      "**Solar** сөзі латынның *sol* — «күн» деген сөзінен шыққан. ☀️ Яғни solar system — Күн жүйесі, ал solar eclipse — Күннің тұтылуы.",
+      "**Solar** происходит от латинского слова *sol* — «солнце». ☀️ Значит, solar system — Солнечная система, а solar eclipse — солнечное затмение."),
+    soc: { q: t("*Solar* comes from the Latin word *sol*. Can you guess what *sol* means? Clue: what is in the center of the solar system?", "*Solar* латынның *sol* сөзінен шыққан. *Sol* нені білдіреді деп ойлайсың? Кілт: Күн жүйесінің ортасында не тұр?", "*Solar* происходит от латинского *sol*. Угадаешь, что значит *sol*? Подсказка: что в центре Солнечной системы?"),
+      acc: [/sun|күн|солн/], hint: t("It's the big star that all 8 planets go around. ⭐", "Бұл — 8 ғаламшардың бәрі айналатын үлкен жұлдыз. ⭐", "Это большая звезда, вокруг которой движутся все 8 планет. ⭐") } },
   { keys: [["planet", "планет", "ғаламшар"], ["how many", "number", "eight", "=8", "list", "which", "сколько", "қанша"]], w: 1, src: "Reader, Ch. 3, p. 24",
-    a: "There are **eight** planets in our solar system: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune. All of them orbit the sun." },
+    a: t("There are **8 planets**: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus and Neptune. They all orbit the sun. 🪐",
+      "**8 ғаламшар** бар: Меркурий, Шолпан (Венера), Жер, Марс, Юпитер, Сатурн, Уран және Нептун. Олардың бәрі Күнді айналады. 🪐",
+      "Всего **8 планет**: Меркурий, Венера, Земля, Марс, Юпитер, Сатурн, Уран и Нептун. Все они движутся вокруг Солнца. 🪐") },
   { keys: [["planet", "планет", "ғаламшар"]], src: "Teacher Guide, Lesson 1 · Reader, Ch. 1, p. 10",
-    a: "A **planet** is a round object in space that orbits a star. Earth is a planet. It is one of eight planets that orbit the sun." },
+    a: t("A **planet** is a round object in space that orbits a star. Earth is a planet. It is one of 8 planets that orbit the sun.",
+      "**Planet** (ғаламшар) — жұлдызды айналатын ғарыштағы дөңгелек дене. Жер — ғаламшар. Ол Күнді айналатын 8 ғаламшардың бірі.",
+      "**Planet** (планета) — круглое тело в космосе, которое движется вокруг звезды. Земля — планета. Она одна из 8 планет вокруг Солнца.") },
   { keys: [["sun", "солнц", "күн", "closest", "nearest"], ["star", "звезд", "жұлдыз"]], w: 1, src: "Reader, Ch. 1, p. 8",
-    a: "Yes. The sun **is a star**. It is the closest star to Earth. It is made of different, hot gases.",
-    soc: { q: "Here is a surprise from the book: the sun is the same kind of object as the tiny lights you see at night, only much closer. What kind of object is it?", acc: [/star|звезд|жұлдыз/], hint: "Twinkle, twinkle, little ___." } },
+    a: t("Yes! The sun **is a star**. ⭐ It is the closest star to Earth. It is made of very hot gases.", "Иә! Күн — **жұлдыз**. ⭐ Ол Жерге ең жақын жұлдыз. Ол өте ыстық газдардан тұрады.", "Да! Солнце — это **звезда**. ⭐ Это ближайшая к Земле звезда. Оно состоит из очень горячих газов."),
+    soc: { q: t("Here's a surprise from the book! 😮 The sun is the same kind of object as the tiny lights you see at night, just much closer. What is it?", "Кітаптан бір тосын дерек! 😮 Күн түнде көретін кішкентай жарықтармен бір түрге жатады, тек әлдеқайда жақын. Ол не?", "Сюрприз из книги! 😮 Солнце — то же самое, что маленькие огоньки, которые ты видишь ночью, только гораздо ближе. Что это?"),
+      acc: [/star|звезд|жұлдыз/], hint: t("Twinkle, twinkle, little ___ ✨", "Түнде аспанда жымыңдайтын… ✨", "Ночью на небе мерцают… ✨") } },
   { keys: [["sun", "солнц"], ["made", "gas", "hot", "heat", "degree", "temperatur", "energy", "warm"]], w: 1, src: "Reader, Ch. 1, pp. 6–8",
-    a: "The sun is made of different, **hot gases**. A hot summer day on Earth is 100 degrees; on the sun it is **10,000 degrees**, all the time. The sun's gases create light and heat energy. That light and heat give life to plants and animals. Without the sun, Earth would be freezing cold." },
+    a: t("The sun is made of different **hot gases**. 🔥 A hot summer day on Earth is 100 degrees. On the sun it is **10,000 degrees**! The sun gives us light and heat. Without the sun, Earth would be freezing cold.",
+      "Күн әртүрлі **ыстық газдардан** тұрады. 🔥 Жердегі ыстық жаз күні — 100 градус. Күнде — **10 000 градус**! Күн бізге жарық пен жылу береді. Күнсіз Жер мұздай суық болар еді.",
+      "Солнце состоит из разных **горячих газов**. 🔥 Жаркий летний день на Земле — 100 градусов. На Солнце — **10 000 градусов**! Солнце даёт нам свет и тепло. Без Солнца на Земле был бы страшный холод.") },
   { keys: [["sun", "солнц"], ["move", "around", "rise", "set", "east", "west", "believ", "long ago"]], w: 1, src: "Reader, Ch. 1, p. 8",
-    a: "Long ago, people believed the sun moved around Earth, because it rose in the east and set in the west. But that is not what really happens. The sun does not move around Earth. **Earth moves around the sun!**",
-    soc: { q: "Each morning the sun rises in the east and sets in the west. Long ago people said the sun moves around Earth. What do we know now: what moves around what?", acc: [/earth.*(around|orbit|circl|moves).*sun|earth moves|земл|жер/], hint: "The book says: “It is ___ that moves around the sun!”" } },
+    a: t("Long ago, people thought the sun moved around Earth, because it comes up in the east and goes down in the west. But that's not true! **Earth moves around the sun.** 🌍☀️",
+      "Ертеде адамдар Күн Жерді айналады деп ойлаған, себебі ол шығыстан шығып, батыста батады. Бірақ бұл дұрыс емес! **Жер Күнді айналады.** 🌍☀️",
+      "Давным-давно люди думали, что Солнце движется вокруг Земли, ведь оно встаёт на востоке и садится на западе. Но это не так! **Земля движется вокруг Солнца.** 🌍☀️"),
+    soc: { q: t("The sun comes up in the east and goes down in the west. Long ago people said the sun moves around Earth. What do we know now? What moves around what?", "Күн шығыстан шығып, батыста батады. Ертеде адамдар Күн Жерді айналады деген. Қазір не білеміз? Не нені айналады?", "Солнце встаёт на востоке и садится на западе. Давным-давно люди говорили, что Солнце движется вокруг Земли. А что мы знаем сейчас? Что вокруг чего движется?"),
+      acc: [/earth.*(around|orbit|circl|moves).*sun|earth moves|земл|жер/], hint: t("The book says: “It is ___ that moves around the sun!”", "Кітапта: «Күнді айналатын — ___!»", "В книге: «Это ___ движется вокруг Солнца!»") } },
 
   // ---------- Chapter 2 ----------
-  { keys: [["solar", "sun", "солнеч", "күннің"], ["eclips", "затмен", "тұтыл"]], w: 1, src: "Reader, Ch. 2, pp. 20–22",
-    a: "In a **solar eclipse** (an eclipse of the sun), the **moon gets between the sun and Earth**. For a while we can't see the sun, or part of it. You must **never** look directly at a solar eclipse: the sun is very bright and could burn your eyes. Solar eclipses can only be seen from a narrow strip of Earth, so seeing one is very rare.",
-    soc: { q: "In a solar eclipse, people on Earth can't see the sun for a while. Which object do you think moves **between** the sun and Earth to block it?", acc: [/moon|лун|=ай/], hint: "It is the object that orbits Earth about once a month." } },
-  { keys: [["lunar", "moon", "лун", "=ай", "айдың"], ["eclips", "затмен", "тұтыл"]], src: "Reader, Ch. 2, p. 22",
-    a: "In a **lunar eclipse** (an eclipse of the moon), the moon passes **behind Earth and into Earth's shadow**. Earth blocks the sun's light, so part of the moon is in darkness. It is safe to look at a lunar eclipse. They happen several times each year and can be seen from half of Earth at a time.",
-    soc: { q: "In a lunar eclipse a dark shadow covers part of the moon. Whose shadow do you think it is?", acc: [/earth|земл|жер/], hint: "Which big object is in the middle, between the sun and the moon?" } },
   { keys: [["solar", "солнеч", "күннің"], ["lunar", "лунн", "айдың"], ["eclips", "затмен", "тұтыл"]], w: 2, src: "Reader, Ch. 2, pp. 20–22",
-    a: "Both are eclipses: the sun's light is blocked. The difference is **which object is in the middle**.\n• **Solar eclipse** (eclipse of the sun): Sun → **Moon** → Earth. The moon blocks the sun, so we can't see it for a while. Never look at it directly! Very rare to see.\n• **Lunar eclipse** (eclipse of the moon): Sun → **Earth** → Moon. The moon moves into Earth's shadow. Safe to look at, and seen more often.",
-    soc: { q: "Let's compare. In both eclipses the sun, Earth and the moon are in a line. In a solar eclipse the **moon** is in the middle. Which object do you think is in the middle in a lunar eclipse?", acc: [/earth|земл|жер/], hint: "In a lunar eclipse a shadow falls on the moon. Whose shadow could it be?" } },
-  { keys: [["eclips", "затмен", "тұтыл"], ["look", "safe", "eyes", "danger", "watch", "see"]], w: 1, src: "Reader, Ch. 2, p. 22",
-    a: "You must **never look directly at a solar eclipse**. The sun is very bright and could burn your eyes. But it is **safe** to look at an eclipse of the moon (a lunar eclipse).",
-    soc: { q: "Which do you think is dangerous to look at: a solar eclipse or a lunar eclipse? Why?", acc: [/solar|sun|солнеч|күн/], hint: "Which of the two eclipses makes you look toward something extremely bright?" } },
+    a: t("Both are eclipses: sunlight gets blocked. The difference is **what is in the middle**.\n• **Solar eclipse**: Sun → **Moon** → Earth. The moon blocks the sun. Never look at it! Very rare to see.\n• **Lunar eclipse**: Sun → **Earth** → Moon. The moon goes into Earth's shadow. Safe to look at. Seen more often.",
+      "Екеуі де тұтылу: күн сәулесі жабылады. Айырмашылығы — **ортада не тұрғанында**.\n• **Күннің тұтылуы**: Күн → **Ай** → Жер. Ай Күнді жабады. Оған қарауға болмайды! Көру өте сирек.\n• **Айдың тұтылуы**: Күн → **Жер** → Ай. Ай Жердің көлеңкесіне кіреді. Қарауға қауіпсіз. Жиірек көрінеді.",
+      "Оба — затмения: солнечный свет закрывается. Разница в том, **что посередине**.\n• **Солнечное затмение**: Солнце → **Луна** → Земля. Луна закрывает Солнце. Не смотри на него! Увидеть очень редко.\n• **Лунное затмение**: Солнце → **Земля** → Луна. Луна уходит в тень Земли. Смотреть безопасно. Видно чаще."),
+    soc: { q: t("Let's compare! In both eclipses, the sun, Earth and moon are in a line. In a solar eclipse the **moon** is in the middle. What is in the middle in a lunar eclipse?", "Салыстырайық! Екі тұтылуда да Күн, Жер және Ай бір түзудің бойында. Күннің тұтылуында ортада **Ай** тұрады. Айдың тұтылуында ортада не тұрады?", "Давай сравним! В обоих затмениях Солнце, Земля и Луна стоят в линию. При солнечном затмении посередине **Луна**. А что посередине при лунном?"),
+      acc: [/earth|земл|жер/], hint: t("In a lunar eclipse a shadow falls on the moon. Whose shadow could it be?", "Айдың тұтылуында Айға көлеңке түседі. Ол кімнің көлеңкесі болуы мүмкін?", "При лунном затмении на Луну падает тень. Чья это может быть тень?") } },
+  { keys: [["solar", "sun", "солнеч", "күннің"], ["eclips", "затмен", "тұтыл"]], w: 1, src: "Reader, Ch. 2, pp. 20–22",
+    a: t("In a **solar eclipse**, the **moon** moves between the sun and Earth. For a while, we can't see the sun (or part of it). ⚠️ **Never** look straight at a solar eclipse. The sun is very bright and can burn your eyes!",
+      "**Күннің тұтылуында** **Ай** Күн мен Жердің арасына түседі. Біраз уақыт Күнді (не оның бір бөлігін) көре алмаймыз. ⚠️ Күннің тұтылуына **ешқашан** тура қарама. Күн өте жарық, көзді күйдіруі мүмкін!",
+      "При **солнечном затмении** **Луна** встаёт между Солнцем и Землёй. Какое-то время мы не видим Солнце (или его часть). ⚠️ **Никогда** не смотри прямо на солнечное затмение. Солнце очень яркое и может обжечь глаза!"),
+    soc: { q: t("In a solar eclipse, we can't see the sun for a while. What do you think moves **between** the sun and Earth?", "Күннің тұтылуында біраз уақыт Күнді көре алмаймыз. Сенің ойыңша, Күн мен Жердің **арасына** не түседі?", "При солнечном затмении мы какое-то время не видим Солнце. Как думаешь, что встаёт **между** Солнцем и Землёй?"),
+      acc: [/moon|лун|(^|\s)ай(\s|$)/], hint: t("It goes around Earth about once a month. 🌙", "Ол Жерді шамамен айына бір рет айналады. 🌙", "Она обходит Землю примерно раз в месяц. 🌙") } },
+  { keys: [["lunar", "moon", "лун", "=ай", "айдың"], ["eclips", "затмен", "тұтыл"]], src: "Reader, Ch. 2, p. 22",
+    a: t("In a **lunar eclipse**, the moon goes **behind Earth**, into Earth's shadow. 🌒 Earth blocks the sunlight, so part of the moon goes dark. It is safe to look at. It happens several times a year.",
+      "**Айдың тұтылуында** Ай **Жердің артына**, Жердің көлеңкесіне кіреді. 🌒 Жер күн сәулесін жабады, сондықтан Айдың бір бөлігі қараңғыланады. Оған қарау қауіпсіз. Бұл жылына бірнеше рет болады.",
+      "При **лунном затмении** Луна уходит **за Землю**, в её тень. 🌒 Земля закрывает солнечный свет, и часть Луны темнеет. Смотреть безопасно. Это бывает несколько раз в год."),
+    soc: { q: t("In a lunar eclipse, a dark shadow covers the moon. Whose shadow do you think it is?", "Айдың тұтылуында Айды қара көлеңке жабады. Сенің ойыңша, бұл кімнің көлеңкесі?", "При лунном затмении Луну закрывает тёмная тень. Как думаешь, чья это тень?"),
+      acc: [/earth|земл|жер/], hint: t("What big object is in the middle, between the sun and the moon?", "Күн мен Айдың ортасында қандай үлкен дене тұр?", "Какое большое тело посередине, между Солнцем и Луной?") } },
+  { keys: [["eclips", "затмен", "тұтыл"], ["look", "safe", "eyes", "danger", "watch", "see", "опасн", "қауіп"]], w: 1, src: "Reader, Ch. 2, p. 22",
+    a: t("⚠️ **Never** look straight at a solar eclipse. The sun is very bright and can burn your eyes. But it's **safe** to look at a lunar eclipse (an eclipse of the moon).",
+      "⚠️ Күннің тұтылуына **ешқашан** тура қарама. Күн өте жарық, көзді күйдіруі мүмкін. Ал Айдың тұтылуына қарау **қауіпсіз**.",
+      "⚠️ **Никогда** не смотри прямо на солнечное затмение. Солнце очень яркое и может обжечь глаза. А на лунное затмение смотреть **безопасно**."),
+    soc: { q: t("Which eclipse is dangerous to look at, solar or lunar? Why?", "Қай тұтылуға қарау қауіпті: Күннің бе, Айдың ба? Неге?", "На какое затмение опасно смотреть: солнечное или лунное? Почему?"),
+      acc: [/solar|sun|солнеч|күн/], hint: t("Which eclipse makes you look at something super bright? 😎", "Қай тұтылуда өте жарық нәрсеге қарауға тура келеді? 😎", "При каком затмении приходится смотреть на что-то очень яркое? 😎") } },
   { keys: [["eclips", "затмен", "тұтыл"], ["often", "rare", "frequen", "how many", "every year", "часто", "жиі"]], w: 1, src: "Reader, Ch. 2, p. 22",
-    a: "Eclipses do not happen often, because the sun, Earth, and the moon all have to line up just right. Solar eclipses happen once or twice a year but can only be seen from a narrow strip of Earth, so it is very rare to see one. Lunar eclipses happen several times each year and can be seen from half of Earth, so they are seen more often." },
+    a: t("Eclipses don't happen often. The sun, Earth and moon must line up just right. Solar eclipses can only be seen from a small strip of Earth, so seeing one is very rare. Lunar eclipses can be seen from half of Earth, so people see them more often.",
+      "Тұтылу жиі болмайды. Күн, Жер және Ай дәл бір түзудің бойында тұруы керек. Күннің тұтылуы Жердің тар жолағынан ғана көрінеді, сондықтан оны көру өте сирек. Айдың тұтылуы Жердің жартысынан көрінеді, сондықтан оны жиірек көреді.",
+      "Затмения бывают нечасто. Солнце, Земля и Луна должны встать точно в линию. Солнечное затмение видно только с узкой полосы Земли, поэтому увидеть его очень редко. Лунное затмение видно с половины Земли, поэтому его видят чаще.") },
   { keys: [["eclips", "затмен", "тұтыл"]], src: "Reader, Ch. 2, p. 20 · Teacher Guide, Lesson 2",
-    a: "An **eclipse** is the blocking of the light from the sun by another object in space. It can happen when Earth, the moon, and the sun all line up in a **direct line**. There are two kinds: a **solar eclipse** (the moon blocks the sun) and a **lunar eclipse** (the moon moves into Earth's shadow).",
-    soc: { q: "An eclipse is about light being **blocked**. What do you think has to happen to the sun, Earth, and the moon for light to get blocked?", acc: [/line|between|middle|row|front|block|behind|in the way/], hint: "The book says they must all move together in a direct ___." } },
+    a: t("An **eclipse** happens when one object in space **blocks the sunlight** from another. 🌑 The sun, Earth and moon must be in a straight line. There are 2 kinds: a **solar eclipse** (the moon blocks the sun) and a **lunar eclipse** (the moon goes into Earth's shadow).",
+      "**Eclipse** (тұтылу) — ғарыштағы бір дене екіншісінен **күн сәулесін жапқанда** болады. 🌑 Күн, Жер және Ай бір түзудің бойында тұруы керек. Екі түрі бар: **Күннің тұтылуы** (Ай Күнді жабады) және **Айдың тұтылуы** (Ай Жердің көлеңкесіне кіреді).",
+      "**Eclipse** (затмение) бывает, когда одно тело в космосе **закрывает солнечный свет** от другого. 🌑 Солнце, Земля и Луна должны стоять в одну линию. Есть 2 вида: **солнечное затмение** (Луна закрывает Солнце) и **лунное затмение** (Луна уходит в тень Земли)."),
+    soc: { q: t("An eclipse is about light being **blocked**. What must happen to the sun, Earth and moon so that light gets blocked?", "Тұтылу — жарықтың **жабылуы**. Жарық жабылуы үшін Күн, Жер және Айға не болуы керек?", "Затмение — это когда свет **закрыт**. Что должно произойти с Солнцем, Землёй и Луной, чтобы свет закрылся?"),
+      acc: [/line|between|middle|row|front|block|behind|in the way|түзу|арас|ортас|лини|между|посередин|ряд/], hint: t("The book says they must move together in a direct ___ (a straight row).", "Кітапта олар бір түзу ___ бойында тұруы керек деп айтылған.", "В книге сказано, что они должны встать в прямую ___.") } },
   { keys: [["moon", "луна", "=ай"], ["light", "shine", "glow", "bright", "own", "свет", "жарық"]], w: 1, src: "Reader, Ch. 2, p. 16",
-    a: "The moon does **not** make its own light. It is a ball of rock. It **reflects** light from the sun: light from the sun hits the moon and bounces off.",
-    soc: { q: "The moon can look like it shines and glows. Do you think it makes its own light like the sun? If not, where does its light come from?", acc: [/reflect|bounc|sun|no|not|отраж|шағыл|солнц|күн/], hint: "The book says the moon is a ball of rock that “simply ___ light from the sun.”" } },
+    a: t("The moon does **not** make its own light. It is a ball of rock. It **reflects** sunlight: light from the sun hits the moon and bounces off. 🌞🌙",
+      "Ай өз жарығын **шығармайды**. Ол — тас шар. Ол күн сәулесін **шағылыстырады**: Күннің жарығы Айға тиіп, кері серпіледі. 🌞🌙",
+      "Луна **не** даёт своего света. Это каменный шар. Она **отражает** солнечный свет: свет Солнца попадает на Луну и отскакивает. 🌞🌙"),
+    soc: { q: t("The moon looks like it shines. Does it make its own light like the sun? If not, where does its light come from?", "Ай жарқырап тұрғандай көрінеді. Ол Күн сияқты өз жарығын шығара ма? Олай болмаса, оның жарығы қайдан келеді?", "Кажется, что Луна светится. Даёт ли она свой свет, как Солнце? Если нет, откуда её свет?"),
+      acc: [/reflect|bounc|\bsun|\bno\b|\bnot\b|n.t make|отраж|шағыл|солнц|күн|нет|жоқ/], hint: t("The moon is a ball of rock that “simply ___ light from the sun.”", "Ай — «күн сәулесін жай ғана ___» тас шар.", "Луна — каменный шар, который «просто ___ свет Солнца».") } },
   { keys: [["reflect", "bounc", "отраж", "шағыл"]], src: "Reader, Ch. 2, p. 16",
-    a: "To **reflect** light means light hits something and bounces off. The moon reflects light from the sun. That is why we can see the moon at night, even though it makes no light of its own." },
-  { keys: [["moon", "луна", "=ай"], ["shape", "size", "change", "phase", "look", "different"]], w: 1, src: "Reader, Ch. 2, p. 18",
-    a: "The moon's size and shape do **not** really change. It is still a round ball. It looks different at different times of the month because of the way the sun's light is reflected and how much of the moon we can see from Earth. These changes are called the phases of the moon.",
-    soc: { q: "The moon looks different during the month. But do you think the moon really changes its size and shape? What could change instead?", acc: [/no|not|light|reflect|see|part|how much/], hint: "The moon reflects sunlight. Think about how much of the lit part we can see from Earth." } },
+    a: t("To **reflect** light means light hits something and **bounces off**. The moon reflects sunlight. That's why we can see the moon at night! 🌙",
+      "**Reflect** (шағылыстыру) — жарық бір затқа тиіп, **кері серпілуі**. Ай күн сәулесін шағылыстырады. Сондықтан біз Айды түнде көреміз! 🌙",
+      "**Reflect** (отражать) — свет попадает на предмет и **отскакивает**. Луна отражает солнечный свет. Поэтому мы видим Луну ночью! 🌙") },
+  { keys: [["moon", "луна", "=ай"], ["shape", "size", "change", "phase", "look", "different", "форм", "пішін"]], w: 1, src: "Reader, Ch. 2, p. 18",
+    a: t("The moon does **not** really change its size or shape. It is always a round ball. ⚪ It looks different during the month because we see different amounts of its sunlit part. These are the **phases** of the moon.",
+      "Айдың өлшемі мен пішіні шын мәнінде **өзгермейді**. Ол әрқашан дөңгелек шар. ⚪ Ай бойы оның Күн жарықтандырған бөлігінің әр түрлі мөлшерін көргендіктен, ол басқаша көрінеді. Бұл — Айдың **фазалары**.",
+      "Луна на самом деле **не** меняет размер и форму. Она всегда круглый шар. ⚪ В течение месяца она выглядит по-разному, потому что мы видим разную часть её освещённой стороны. Это **фазы** Луны."),
+    soc: { q: t("The moon looks different during the month. But does it **really** change size and shape? What could change instead?", "Ай бойы Ай әр түрлі көрінеді. Бірақ оның өлшемі мен пішіні **шынымен** өзгере ме? Оның орнына не өзгеруі мүмкін?", "В течение месяца Луна выглядит по-разному. Но **правда** ли она меняет размер и форму? Что может меняться вместо этого?"),
+      acc: [/\bno\b|\bnot\b|n.t|light|reflect|\bsee|\bpart|how much|жоқ|емес|жарық|нет|свет|част/], hint: t("The moon reflects sunlight. Think about **how much** of the lit part we can see from Earth.", "Ай күн сәулесін шағылыстырады. Жерден оның жарық бөлігінің **қаншасын** көретінімізді ойла.", "Луна отражает солнечный свет. Подумай, **какую часть** освещённой стороны мы видим с Земли.") } },
   { keys: [["moon", "луна", "=ай"], ["month", "orbit", "around", "circle", "long", "take"]], w: 1, src: "Reader, Ch. 2, p. 18",
-    a: "The moon **orbits Earth**. It takes just about **one month** for the moon to completely circle Earth.",
-    soc: { q: "The moon orbits Earth. Earth orbits the sun in a year. Do you think the moon takes a day, a month, or a year to circle Earth?", acc: [/month|ай|месяц/], hint: "The word “month” is related to the word “moon”. Think about it!" } },
+    a: t("The moon **orbits Earth**. One full trip takes about **one month**. 🌙", "Ай **Жерді айналады**. Бір толық айналым шамамен **бір ай** алады. 🌙", "Луна **движется вокруг Земли**. Один полный круг занимает примерно **один месяц**. 🌙"),
+    soc: { q: t("Earth goes around the sun in one year. How long do you think the moon takes to go around Earth: a day, a month or a year?", "Жер Күнді бір жылда айналады. Сенің ойыңша, Ай Жерді қанша уақытта айналады: бір тәулік, бір ай әлде бір жыл?", "Земля обходит Солнце за год. Как думаешь, за сколько Луна обходит Землю: за день, месяц или год?"),
+      acc: [/month|(^|\s)ай(\s|$)|месяц/], hint: t("It is longer than a day but shorter than a year.", "Ол бір тәуліктен ұзақ, бірақ бір жылдан қысқа.", "Это дольше дня, но короче года.") } },
   { keys: [["lunar"]], src: "Reader, Ch. 2, p. 22",
-    a: "**Lunar** is about the moon. The book calls the same event a “lunar eclipse” and an “eclipse of the moon.”" },
+    a: t("**Lunar** is about the moon. The book says “lunar eclipse” and “eclipse of the moon” for the same thing. 🌙", "**Lunar** — Айға қатысты сөз. Кітапта «lunar eclipse» және «eclipse of the moon» бір нәрсені білдіреді. 🌙", "**Lunar** — значит «лунный». В книге «lunar eclipse» и «eclipse of the moon» — одно и то же. 🌙") },
   { keys: [["moon", "луна", "=ай"]], src: "Reader, Ch. 2, pp. 16–18",
-    a: "The moon is a ball of rock that gives off no light of its own: it reflects light from the sun. It orbits Earth, and one trip takes about one month." },
+    a: t("The moon is a ball of rock. It has no light of its own: it reflects sunlight. It goes around Earth about once a month. 🌙", "Ай — тас шар. Оның өз жарығы жоқ: ол күн сәулесін шағылыстырады. Ол Жерді шамамен айына бір рет айналады. 🌙", "Луна — каменный шар. У неё нет своего света: она отражает солнечный свет. Она обходит Землю примерно раз в месяц. 🌙") },
 
   // ---------- Chapter 3 ----------
   { keys: [["naked", "невооруж", "жай көз"]], src: "Reader, Ch. 3, p. 24 · Teacher Guide, Lesson 3",
-    a: "The **naked eye** means just your own eye, with no telescope or other tool. People from Mesopotamia, the Greeks, Mayans, Incas, and Aztecs studied the planets with just their naked eye.",
-    soc: { q: "Long ago people studied the planets with no telescopes. The book says they used their “naked eye.” What do you think that means?", acc: [/own|just|only|without|no (tool|telescope)|eye|глаз|көз/], hint: "Here “naked” means “with nothing added.” What could you add to your eye to see farther?" } },
+    a: t("The **naked eye** means just your own eyes, with no telescope or other tool. 👀 Long ago, people from Mesopotamia, the Greeks, Mayans, Incas and Aztecs studied the planets with their naked eye.",
+      "**Naked eye** (жай көз) — телескопсыз, ешбір құралсыз, тек өз көзің. 👀 Ертеде Месопотамия тұрғындары, гректер, майялар, инктер және ацтектер ғаламшарларды жай көзбен зерттеген.",
+      "**Naked eye** (невооружённый глаз) — это просто твои глаза, без телескопа и других приборов. 👀 Давным-давно жители Месопотамии, греки, майя, инки и ацтеки изучали планеты невооружённым глазом."),
+    soc: { q: t("Long ago, people studied planets without telescopes. The book says they used their “naked eye.” What do you think that means? 👀", "Ертеде адамдар ғаламшарларды телескопсыз зерттеген. Кітапта олар «naked eye» қолданған делінген. Бұл нені білдіреді деп ойлайсың? 👀", "Давным-давно люди изучали планеты без телескопов. В книге сказано, что они использовали «naked eye». Как думаешь, что это значит? 👀"),
+      acc: [/\bown\b|\bjust\b|\bonly\b|without|no (tool|telescope)|\beyes?\b|глаз|көз/], hint: t("Here “naked” means “with nothing added.” What could you add to your eyes to see far?", "Мұнда “naked” — «ештеңе қосылмаған» деген мағынада. Алысты көру үшін көзге не қосуға болады?", "Здесь “naked” значит «ничего не добавлено». Что можно добавить к глазам, чтобы видеть далеко?") } },
   { keys: [["telescop", "телескоп"]], src: "Reader, Ch. 3, p. 24",
-    a: "A **telescope** is a tool that helps us get a better look at the planets. Long ago people had no telescopes and used just their naked eye. Now we have telescopes and other tools.",
-    soc: { q: "People long ago used their naked eye. Why do you think people today use telescopes?", acc: [/better|closer|see|look|far|clear|bigger|more|detail/], hint: "The book says telescopes help us get a ___ look at the planets." } },
-  { keys: [["mars", "марс"], ["ice", "water", "life", "alive", "live", "лёд", "лед", "вода", "жизн", "мұз", "су", "өмір"]], w: 1, src: "Reader, Ch. 3, p. 30",
-    a: "A probe that went to Mars found **ice**, which is frozen water. That was big news: **if there is water on Mars, there might be life.** Experts don't agree. Some say nothing could live on Mars because it is too cold and too dry. Others think something might be alive under the rocks. Others think there was life on Mars once, but not now.",
-    soc: { q: "A probe found ice on Mars. Ice is frozen water. Why do you think scientists got so excited about water?", acc: [/life|live|alive|living|жизн|өмір|тірі|жив/], hint: "Finish the book's sentence: “If there is water on Mars, there might be ___.”" } },
+    a: t("A **telescope** is a tool that helps us get a better look at faraway things, like the planets. 🔭 Long ago people had no telescopes. Now we do!", "**Telescope** (телескоп) — ғаламшарлар сияқты алыстағы нәрселерді жақсырақ көруге көмектесетін құрал. 🔭 Ертеде адамдарда телескоп болмаған. Қазір бар!", "**Telescope** (телескоп) — прибор, который помогает лучше рассмотреть далёкие объекты, например планеты. 🔭 Давным-давно телескопов не было. А сейчас есть!"),
+    soc: { q: t("People long ago used just their eyes. Why do you think people today use telescopes?", "Ертедегі адамдар тек көздерін қолданған. Сенің ойыңша, бүгінгі адамдар неге телескоп қолданады?", "Давным-давно люди смотрели только глазами. Как думаешь, зачем сегодня люди используют телескопы?"),
+      acc: [/better|closer|see|look|far|clear|bigger|more|detail|жақсы|көр|алыс|лучше|видеть|ближе|далек|далёк/], hint: t("The book says telescopes help us get a ___ look at the planets.", "Кітапта телескоптар ғаламшарларды ___ көруге көмектеседі делінген.", "В книге сказано, что телескопы помогают ___ рассмотреть планеты.") } },
+  { keys: [["mars", "марс"], ["ice", "water", "life", "alive", "live", "лёд", "лед", "вода", "жизн", "мұз", "су", "өмір", "тіршілік"]], w: 1, src: "Reader, Ch. 3, p. 30",
+    a: t("A probe on Mars found **ice** (frozen water). 🧊 That was big news, because if there is water on Mars, there might be **life**. Scientists don't agree yet. Some say Mars is too cold and dry. Others think something might live under the rocks!",
+      "Марстағы зонд **мұз** (қатқан су) тапты. 🧊 Бұл үлкен жаңалық болды, себебі Марста су болса, онда **тіршілік** болуы мүмкін. Ғалымдар әлі келіспейді. Біреулер Марс тым суық әрі құрғақ дейді. Басқалары тастардың астында бірдеңе тіршілік етуі мүмкін деп ойлайды!",
+      "Зонд на Марсе нашёл **лёд** (замёрзшую воду). 🧊 Это была большая новость: если на Марсе есть вода, там может быть **жизнь**. Учёные пока спорят. Одни говорят, что на Марсе слишком холодно и сухо. Другие думают, что под камнями может быть что-то живое!"),
+    soc: { q: t("A probe found ice on Mars. Ice is frozen water. Why do you think scientists were so excited about water?", "Зонд Марстан мұз тапты. Мұз — қатқан су. Сенің ойыңша, ғалымдар су туралы неге соншалық қуанды?", "Зонд нашёл на Марсе лёд. Лёд — это замёрзшая вода. Как думаешь, почему учёные так обрадовались воде?"),
+      acc: [/life|live|alive|living|жизн|өмір|тірі|тіршілік|жив/], hint: t("Finish the book's sentence: “If there is water on Mars, there might be ___.”", "Кітаптағы сөйлемді аяқта: «Марста су болса, онда ___ болуы мүмкін».", "Закончи предложение из книги: «Если на Марсе есть вода, там может быть ___».") } },
   { keys: [["probe", "зонд"]], src: "Reader, Ch. 3, p. 30 · Teacher Guide, Lesson 3",
-    a: "A **probe** is a tool used to explore something, such as outer space. Many space probes and robots have landed on Mars. They have taken photographs and dug up rocks, and one probe found ice.",
-    soc: { q: "The book says probes “landed on Mars,” “took photographs” and “dug up rocks.” So what job do you think a probe does?", acc: [/explor|study|learn|find|research|investig|discover|photo|look|зерт|исслед|изуч/], hint: "Probes go to places people can't easily go, to find out what is there. Another word for that is to ___ a place." } },
+    a: t("A **probe** is a tool used to explore something, like outer space. 🛰️ Many probes and robots have landed on Mars. They took photos, dug up rocks, and one found ice!", "**Probe** (зонд) — бір нәрсені, мысалы, ғарышты зерттеуге арналған құрал. 🛰️ Көптеген зондтар мен роботтар Марсқа қонды. Олар суретке түсірді, тас қазды, ал біреуі мұз тапты!", "**Probe** (зонд) — прибор для исследования чего-либо, например космоса. 🛰️ Много зондов и роботов садились на Марс. Они фотографировали, выкапывали камни, а один нашёл лёд!"),
+    soc: { q: t("The book says probes “landed on Mars,” “took photographs” and “dug up rocks.” So what job does a probe do?", "Кітапта зондтар «Марсқа қонды», «суретке түсірді» және «тас қазды» делінген. Сонда зондтың жұмысы қандай?", "В книге сказано, что зонды «сели на Марс», «сделали фотографии» и «выкопали камни». Так какая работа у зонда?"),
+      acc: [/explor|study|learn|find|research|investig|discover|photo|look|зерт|исслед|изуч/], hint: t("Probes go to places that are hard for people to reach, to find out what is there. Another word for this is to ___ a place.", "Зондтар адамдар оңай бара алмайтын жерлерге барып, онда не бар екенін біледі. Мұны бір сөзбен «___» дейміз.", "Зонды летят туда, куда людям трудно попасть, чтобы узнать, что там есть. Одним словом это — «___».") } },
   { keys: [["mars", "марс"], ["red", "colou", "color", "rust", "қызыл", "красн"]], w: 1, src: "Reader, Ch. 3, p. 30",
-    a: "Mars looks quite **red** in the night sky because the rocks on Mars contain **rust**." },
+    a: t("Mars looks **red** because the rocks on Mars have **rust** in them. 🔴", "Марс **қызыл** болып көрінеді, себебі оның тастарында **тот** бар. 🔴", "Марс выглядит **красным**, потому что в его камнях есть **ржавчина**. 🔴") },
   { keys: [["mars", "марс"]], src: "Reader, Ch. 3, p. 30",
-    a: "Mars is the **fourth** planet from the sun. It is named after the Roman god of war. It looks red because its rocks contain rust. Many probes and robots have landed on Mars, and one found ice." },
+    a: t("Mars is the **4th** planet from the sun. It is named after the Roman god of war. It looks red because its rocks have rust. Many probes have landed there, and one found ice! 🔴",
+      "Марс — Күннен санағанда **4-ші** ғаламшар. Ол римдіктердің соғыс құдайының атымен аталған. Оның тастарында тот болғандықтан, ол қызыл болып көрінеді. Онда көп зонд қонды, біреуі мұз тапты! 🔴",
+      "Марс — **4-я** планета от Солнца. Она названа в честь римского бога войны. Она выглядит красной, потому что в её камнях есть ржавчина. Туда садились многие зонды, и один нашёл лёд! 🔴") },
   { keys: [["mercury", "меркур"]], w: 1, src: "Reader, Ch. 3, pp. 26–28",
-    a: "Mercury is the planet **closest to the sun** and the **smallest** of all the planets. It needs just **88 days** to orbit the sun. It is named after the Roman god Mercury (the Greek name for this god is Hermes)." },
+    a: t("Mercury is the **closest** planet to the sun and the **smallest** planet. It goes around the sun in just **88 days**. Its name comes from the Roman god Mercury.",
+      "Меркурий — Күнге **ең жақын** және **ең кішкентай** ғаламшар. Ол Күнді небәрі **88 күнде** айналады. Оның аты римдіктердің Меркурий құдайынан шыққан.",
+      "Меркурий — **ближайшая** к Солнцу и **самая маленькая** планета. Он обходит Солнце всего за **88 дней**. Его имя — от римского бога Меркурия.") },
   { keys: [["venus", "венер", "шолпан"]], w: 1, src: "Reader, Ch. 3, pp. 26–28",
-    a: "Venus is the **second** planet from the sun and the closest planet to Earth. It needs 225 days to orbit the sun. It was named after the Roman goddess of love. Scientists once thought Venus might be a lot like Earth (same size, covered with clouds), but they changed their ideas to fit new facts: Venus is much hotter than Earth." },
+    a: t("Venus is the **2nd** planet from the sun and the closest planet to Earth. It goes around the sun in 225 days. It is named after the Roman goddess of love. Scientists once thought Venus was like Earth, but now they know it is much **hotter**.",
+      "Шолпан (Венера) — Күннен санағанда **2-ші** ғаламшар және Жерге ең жақын ғаламшар. Ол Күнді 225 күнде айналады. Ол римдіктердің махаббат құдайының атымен аталған. Бір кездері ғалымдар Шолпанды Жерге ұқсас деп ойлаған, бірақ қазір оның әлдеқайда **ыстық** екенін біледі.",
+      "Венера — **2-я** планета от Солнца и ближайшая к Земле. Она обходит Солнце за 225 дней. Она названа в честь римской богини любви. Когда-то учёные думали, что Венера похожа на Землю, но теперь знают, что она гораздо **горячее**.") },
   { keys: [["closer", "farther", "faster", "slower", "longer", "less time", "more time", "=88", "=225"]], src: "Reader, Ch. 3, p. 26",
-    a: "The **closer** a planet is to the sun, the **less time** it needs to orbit the sun. Mercury needs 88 days, Venus 225 days, Earth 365 days. Planets farther away take much longer: Neptune takes 165 years!",
-    soc: { q: "Mercury is closest to the sun and needs 88 days to orbit it. Earth needs 365 days. What's the pattern: does a planet closer to the sun need **more** or **less** time?", acc: [/less|short|fast|quick|меньше|аз|быстр/], hint: "Compare the numbers: 88 is smaller than 365. And Mercury is the closer one." } },
+    a: t("The **closer** a planet is to the sun, the **less time** it needs to go around it. ⏱️ Mercury: 88 days. Venus: 225 days. Earth: 365 days. Neptune is far away. It takes **165 years**!",
+      "Ғаламшар Күнге неғұрлым **жақын** болса, оны айналуға соғұрлым **аз уақыт** кетеді. ⏱️ Меркурий: 88 күн. Шолпан: 225 күн. Жер: 365 күн. Нептун өте алыста — оған **165 жыл** керек!",
+      "Чем **ближе** планета к Солнцу, тем **меньше времени** ей нужно, чтобы его обойти. ⏱️ Меркурий: 88 дней. Венера: 225 дней. Земля: 365 дней. Нептун далеко — ему нужно **165 лет**!"),
+    soc: { q: t("Mercury is closest to the sun and needs 88 days. Earth needs 365 days. So does a closer planet need **more** or **less** time?", "Меркурий Күнге ең жақын, оған 88 күн керек. Жерге 365 күн керек. Сонда жақынырақ ғаламшарға **көбірек** уақыт керек пе, әлде **азырақ** па?", "Меркурий ближе всех к Солнцу, ему нужно 88 дней. Земле нужно 365 дней. Так ближней планете нужно **больше** или **меньше** времени?"),
+      acc: [/less|short|fast|quick|меньше|аз|быстр/], hint: t("Compare: 88 is smaller than 365. And Mercury is the closer one.", "Салыстыр: 88 саны 365-тен кіші. Ал Меркурий жақынырақ.", "Сравни: 88 меньше, чем 365. А Меркурий ближе.") } },
   { keys: [["planet", "планет", "ғаламшар", "mercury", "venus", "mars"], ["closest", "nearest", "inner", "rocky", "first four", "four", "surface", "близк", "жақын"]], w: 2, src: "Reader, Ch. 3, p. 26",
-    a: "The four planets closest to the sun are **Mercury, Venus, Earth, and Mars**. They are small planets with a rocky, or solid, surface." },
+    a: t("The 4 planets closest to the sun are **Mercury, Venus, Earth and Mars**. They are small planets with a rocky, solid surface. 🪨", "Күнге ең жақын 4 ғаламшар: **Меркурий, Шолпан, Жер және Марс**. Олар — беті тасты, қатты шағын ғаламшарлар. 🪨", "4 ближайшие к Солнцу планеты: **Меркурий, Венера, Земля и Марс**. Это небольшие планеты с каменистой, твёрдой поверхностью. 🪨") },
   { keys: [["jupiter", "saturn", "uranus", "neptune", "юпитер", "сатурн", "уран", "нептун"]], src: "Reader, Ch. 3, pp. 24–26",
-    a: "Jupiter, Saturn, Uranus, and Neptune are the other planets that orbit the sun. In our three lessons the book only tells us that the far planets take much longer to orbit: **Neptune takes 165 years!** They are explained in Chapter 4, which is not part of this demo course." },
+    a: t("Jupiter, Saturn, Uranus and Neptune are the other planets. Our 3 lessons only tell us one thing about them: they take a long time to orbit the sun. **Neptune takes 165 years!** You'll learn more in Chapter 4.",
+      "Юпитер, Сатурн, Уран және Нептун — басқа ғаламшарлар. Біздің 3 сабағымыз олар туралы бір ғана нәрсені айтады: олар Күнді ұзақ айналады. **Нептунға 165 жыл керек!** Толығырақ 4-тарауда білесің.",
+      "Юпитер, Сатурн, Уран и Нептун — другие планеты. Наши 3 урока говорят о них только одно: они долго обходят Солнце. **Нептуну нужно 165 лет!** Подробнее узнаешь в 4-й главе.") },
   { keys: [["long ago", "ancient", "greek", "maya", "inca", "aztec", "mesopotam", "thousand"]], src: "Reader, Ch. 3, p. 24",
-    a: "People have looked at the planets for thousands of years. People from Mesopotamia, the Greeks, Mayans, Incas, and Aztecs were all interested in the planets. They used just their **naked eye**. Now we have telescopes and other tools." },
+    a: t("People have watched the planets for thousands of years! People from Mesopotamia, the Greeks, Mayans, Incas and Aztecs all studied them with their **naked eye**. Now we have telescopes. 🔭",
+      "Адамдар ғаламшарларды мыңдаған жылдар бойы бақылап келеді! Месопотамия тұрғындары, гректер, майялар, инктер және ацтектер оларды **жай көзбен** зерттеген. Қазір бізде телескоптар бар. 🔭",
+      "Люди наблюдают за планетами тысячи лет! Жители Месопотамии, греки, майя, инки и ацтеки изучали их **невооружённым глазом**. А сейчас у нас есть телескопы. 🔭") },
   { keys: [["name", "named", "god", "goddess", "roman"]], src: "Reader, Ch. 3, pp. 28–30",
-    a: "The English names of the planets come from the Romans. Mercury is named after the Roman god Mercury (Hermes in Greek). Venus is named after the Roman goddess of love. Mars is named after the Roman god of war." },
+    a: t("Planet names come from the Romans. Mercury is named after the god Mercury. Venus is named after the goddess of love. Mars is named after the god of war.", "Ғаламшарлардың атаулары римдіктерден келген. Меркурий — Меркурий құдайының атымен, Венера — махаббат құдайының атымен, Марс — соғыс құдайының атымен аталған.", "Названия планет пришли от римлян. Меркурий назван в честь бога Меркурия. Венера — в честь богини любви. Марс — в честь бога войны.") },
   { keys: [["scientist", "expert", "disagree", "argue", "change their idea"]], src: "Reader, Ch. 3, pp. 28–30",
-    a: "Scientists sometimes have to change their ideas to fit new facts. For a long time they thought Venus was a lot like Earth, but now they know Venus is much hotter. About Mars, experts still argue: some say nothing could live there, others think there might be life under the rocks." }
+    a: t("Scientists sometimes change their ideas when they find new facts. 🔬 They once thought Venus was like Earth, but it is much hotter. About Mars, experts still argue: is there life or not?", "Ғалымдар жаңа дерек тапқанда кейде пікірлерін өзгертеді. 🔬 Олар бір кездері Шолпанды Жерге ұқсас деп ойлаған, бірақ ол әлдеқайда ыстық. Марс туралы мамандар әлі дауласады: онда тіршілік бар ма, жоқ па?", "Учёные иногда меняют своё мнение, когда находят новые факты. 🔬 Когда-то они думали, что Венера похожа на Землю, но она гораздо горячее. О Марсе учёные всё ещё спорят: есть там жизнь или нет?") }
 ];
 
 /* ============================ LESSONS ============================ */
@@ -585,125 +722,211 @@ const LESSONS = [
   { id: "L1", title: "Orbit & Axis", sub: "How Earth moves", terms: ["orbit", "axis"], src: "Reader Ch. 1 “The Sun, Earth, and Our Solar System”, pp. 6–15",
     badge: { id: "orbit", name: "Orbit Ace" },
     steps: [
-      { t: "dir", nocount: true, text: "Welcome to **Lesson 1**! You will learn two key terms: [[orbit]] and [[axis]]. They come from Chapter 1 of our Reader, “The Sun, Earth, and Our Solar System.”" },
-      { t: "soc", q: "Let's start with a puzzle from the book. Every morning the sun rises in the **east**, and every evening it sets in the **west**. Long ago, people decided the sun moves around Earth. Do you agree?",
-        options: [ { l: "Yes, the sun moves around Earth", fb: "That is exactly what people believed long ago! It seemed to make sense. But the book says it is not what really happens." },
-                   { l: "No, Earth moves around the sun", ok: true } ],
-        hints: [ "The book says: “The sun does not move around Earth. It is ___ that moves around the sun!” Which planet fits in the gap?" ],
-        after: "“It is Earth that moves around the sun!” (Reader, p. 8). Moving around the sun has a special name. Let's find it." },
-      { t: "soc", open: true, q: "Read this sentence from page 10:\n“All of these planets, including Earth, **circle**, or **orbit**, around the sun.”\nWhich word in the sentence means almost the same as *orbit*?",
+      { t: "dir", nocount: true, text: t("Hi! 👋 This is **Lesson 1**. We will learn two words: [[orbit]] and [[axis]]. They are from Chapter 1 of our Reader.",
+        "Сәлем! 👋 Бұл — **1-сабақ**. Біз екі сөз үйренеміз: **orbit** (орбита) және **axis** (ось). Олар Оқулықтың 1-тарауынан алынған.",
+        "Привет! 👋 Это **урок 1**. Мы выучим два слова: **orbit** (орбита) и **axis** (ось). Они из 1-й главы нашей книги.") },
+      { t: "soc", term: "orbit",
+        q: t("Let's start with a puzzle! 🧩 Every morning the sun comes up in the **east**. Every evening it goes down in the **west**. Long ago, people said: “The sun moves around Earth.” Are they right?",
+          "Жұмбақтан бастайық! 🧩 Күн сайын таңертең Күн **шығыстан** шығады. Кешке **батыста** батады. Ертеде адамдар: «Күн Жерді айналады», — деген. Олар дұрыс па?",
+          "Начнём с загадки! 🧩 Каждое утро Солнце встаёт на **востоке**. Каждый вечер оно садится на **западе**. Давным-давно люди говорили: «Солнце движется вокруг Земли». Они правы?"),
+        options: [ { l: t("Yes, the sun moves around Earth", "Иә, Күн Жерді айналады", "Да, Солнце движется вокруг Земли"),
+                     fb: t("Many people thought that long ago! It looked true. But it is not what really happens.", "Ертеде көп адам солай ойлаған! Солай көрінген. Бірақ шын мәнінде олай емес.", "Давным-давно многие так думали! Так казалось. Но на самом деле всё не так.") },
+                   { l: t("No, Earth moves around the sun", "Жоқ, Жер Күнді айналады", "Нет, Земля движется вокруг Солнца"), ok: true } ],
+        re: t("The sun only **looks** like it moves. The book says: “The sun does not move around Earth.”", "Күн тек қозғалып **тұрғандай көрінеді**. Кітапта: «Күн Жерді айналмайды», — делінген.", "Солнце только **кажется** движущимся. В книге сказано: «Солнце не движется вокруг Земли»."),
+        hints: [ t("The book says: “It is ___ that moves around the sun!” Which planet goes in the gap?", "Кітапта: «Күнді айналатын — ___!» делінген. Бос орынға қай ғаламшар келеді?", "В книге: «Это ___ движется вокруг Солнца!» Какая планета подходит в пропуск?") ],
+        after: t("**Earth** moves around the sun! (Reader, p. 8) This movement has a special name. Let's find it! 🔍", "**Жер** Күнді айналады! (Оқулық, 8-бет) Бұл қозғалыстың арнайы атауы бар. Соны табайық! 🔍", "**Земля** движется вокруг Солнца! (Книга, с. 8) У этого движения есть особое название. Давай найдём его! 🔍") },
+      { t: "soc", open: true, term: "orbit",
+        q: t("Read this sentence from page 10:\n“All of these planets, including Earth, **circle**, or **orbit**, around the sun.”\nWhich word means almost the same as *orbit*?",
+          "10-беттегі сөйлемді оқы:\n“All of these planets, including Earth, circle, or orbit, around the sun.”\n(Жерді қоса алғанда, барлық ғаламшарлар Күнді айнала жүреді.)\nҚай ағылшын сөзінің мағынасы *orbit* сөзіне жақын?",
+          "Прочитай предложение со страницы 10:\n“All of these planets, including Earth, circle, or orbit, around the sun.”\n(Все эти планеты, включая Землю, движутся вокруг Солнца.)\nКакое английское слово значит почти то же, что *orbit*?"),
         accept: [/circle/],
-        options: [ { l: "planets", fb: "Planets are the things that move. We need the word for the movement." }, { l: "circle", ok: true }, { l: "sun", fb: "The sun is in the center. We need the word for how planets move around it." } ],
-        hints: [ "Look at the two words joined by “or”: “___, or orbit”.", "The word is also the name of a round shape." ],
-        after: "The word is **circle**. When the book writes “circle, or orbit”, it gives you a synonym. Writers often do this to explain a new word." },
+        options: [ { l: "planets", fb: t("“Planets” are the things that move. We need the word for **how** they move.", "“Planets” — қозғалатын заттар. Бізге олардың **қалай** қозғалатынын білдіретін сөз керек.", "“Planets” — это то, что движется. Нам нужно слово о том, **как** они движутся.") },
+                   { l: "circle", ok: true },
+                   { l: "sun", fb: t("The sun is in the middle. We need the word for how planets move around it.", "Күн — ортада. Бізге ғаламшарлардың оны қалай айналатынын білдіретін сөз керек.", "Солнце в центре. Нам нужно слово о том, как планеты движутся вокруг него.") } ],
+        re: t("Look at the little word **“or”**. Writers use “or” to give another word with the same meaning: “___, or orbit”.", "**“or”** (немесе) деген сөзге қара. Авторлар “or” арқылы мағынасы бірдей басқа сөзді береді: “___, or orbit”.", "Посмотри на маленькое слово **“or”** (или). Авторы пишут “or”, чтобы дать слово с тем же значением: “___, or orbit”."),
+        hints: [ t("The word comes right before “or orbit”.", "Ол сөз “or orbit” дегеннің алдында тұр.", "Это слово стоит прямо перед “or orbit”."),
+                 t("It is also the name of a round shape. ⭕", "Бұл — дөңгелек пішіннің де атауы. ⭕", "Это ещё и название круглой фигуры. ⭕") ],
+        after: t("It's **circle**! “Circle, or orbit” means they are almost the same. Writers often explain new words like this. 😊", "Бұл — **circle** (шеңбер)! “Circle, or orbit” деген — олардың мағынасы жақын деген сөз. Авторлар жаңа сөздерді жиі осылай түсіндіреді. 😊", "Это **circle** (круг)! “Circle, or orbit” значит, что слова почти одинаковые. Авторы часто так объясняют новые слова. 😊") },
       { t: "term", term: "orbit", svg: "orbit" },
-      { t: "soc", open: true, q: "It takes Earth about **365 days** to orbit the sun one time. What do we call 365 days?",
+      { t: "soc", open: true, term: "orbit",
+        q: t("It takes Earth about **365 days** to go around the sun one time. What do we call 365 days? 📅", "Жер Күнді бір рет айналып шығуға шамамен **365 күн** жұмсайды. 365 күнді не деп атаймыз? 📅", "Земле нужно около **365 дней**, чтобы один раз обойти вокруг Солнца. Как мы называем 365 дней? 📅"),
         accept: [/year|жыл|год/],
-        options: [ { l: "one day", fb: "A day is much shorter. 365 days is a lot of days!" }, { l: "one month", fb: "A month is only about 30 days." }, { l: "one year", ok: true } ],
-        hints: [ "Think about your birthday. How often does it come?" ],
-        after: "One orbit of the sun = **one year** on Earth (Reader, p. 12)." },
+        options: [ { l: "one day", fb: t("A day is much shorter!", "Бір күн әлдеқайда қысқа!", "Один день намного короче!") },
+                   { l: "one month", fb: t("A month is only about 30 days.", "Бір ай — шамамен 30 күн ғана.", "Месяц — это всего около 30 дней.") },
+                   { l: "one year", ok: true } ],
+        re: t("One trip around the sun = one **orbit**. Count the days: 365.", "Күнді бір айналу = бір **orbit** (орбита). Күндерді сана: 365.", "Один круг вокруг Солнца = одна **orbit** (орбита). Посчитай дни: 365."),
+        hints: [ t("Think about your birthday 🎂. How often does it come?", "Туған күніңді ойла 🎂. Ол қаншада бір рет келеді?", "Вспомни свой день рождения 🎂. Как часто он бывает?") ],
+        after: t("One orbit around the sun = **one year**. (Reader, p. 12)", "Күнді бір айналу = **бір жыл**. (Оқулық, 12-бет)", "Один оборот вокруг Солнца = **один год**. (Книга, с. 12)") },
       { t: "dir", svg: "axis",
-        text: { s: "Earth moves in a **second** way, too. It spins like a toy top. It spins around a line through its middle. This line is called the [[axis]]. The line is not real. It is imaginary.",
-                m: "But Earth moves in **two** ways. Besides orbiting the sun, Earth also spins, or [[rotate|rotates]], on its [[axis]], like a toy top spinning on the floor. The axis is an imaginary line from the North Pole to the South Pole, right through Earth's center." } },
+        text: t("Earth moves in a **second** way, too! It spins, or [[rotate|rotates]], like a toy top. It spins around an imaginary line through its middle. This line is called the [[axis]].",
+          "Жер **екінші** жолмен де қозғалады! Ол зырылдауық сияқты өз осінен айналады. Ол ортасынан өтетін ойша сызықты айналады. Бұл сызық **axis** (ось) деп аталады.",
+          "Земля движется ещё **вторым** способом! Она вращается, как юла. Она крутится вокруг воображаемой линии через свою середину. Эта линия называется **axis** (ось).",
+          "Earth moves in a **second** way, too! It spins like a toy top. It spins around a line through its middle. This line is the [[axis]]. The line is not real. It is imaginary.") },
       { t: "term", term: "axis" },
-      { t: "soc", q: "Earth makes one complete turn (rotation) on its axis. How long does that take?",
-        options: [ { l: "One day", ok: true }, { l: "One month", fb: "About one month is how long the moon takes to go around Earth. That's Lesson 2!" }, { l: "One year", fb: "One year is one trip around the sun. That is an orbit, not a turn on the axis." } ],
-        hints: [ "The book says: “It takes one ___ for Earth to make one complete rotation on its axis.”" ],
-        after: "One spin on the axis = **one day**." },
-      { t: "soc", open: true, svg: "axis", q: "Now think like a scientist. As Earth spins, one side faces the sun and gets sunlight. It is daytime there. What is it like on the side facing **away** from the sun?",
+      { t: "soc", term: "axis",
+        q: t("Earth spins one full time on its axis. How long does that take? ⏰", "Жер өз осінен бір рет толық айналады. Оған қанша уақыт кетеді? ⏰", "Земля делает один полный оборот вокруг своей оси. Сколько времени это занимает? ⏰"),
+        options: [ { l: "One day", ok: true },
+                   { l: "One month", fb: t("One month is how long the moon takes to go around Earth. That's Lesson 2!", "Бір ай — Айдың Жерді айналып шығатын уақыты. Бұл 2-сабақта!", "Один месяц — это время, за которое Луна обходит Землю. Это урок 2!") },
+                   { l: "One year", fb: t("One year is one trip around the sun. That's an orbit, not a spin.", "Бір жыл — Күнді бір айналу. Бұл — орбита, өз осінен айналу емес.", "Один год — это один круг вокруг Солнца. Это орбита, а не вращение.") } ],
+        re: t("Spinning on the **axis** is fast. Going around the sun (orbit) is slow: one year.", "Өз **осінен** айналу — жылдам. Күнді айналу (орбита) — баяу: бір жыл.", "Вращение вокруг **оси** — быстрое. Движение вокруг Солнца (орбита) — медленное: один год."),
+        hints: [ t("The book says: “It takes one ___ for Earth to make one complete rotation on its axis.”", "Кітапта: «Жер өз осінен бір рет толық айналуға бір ___ жұмсайды», — делінген.", "В книге: «Земле нужен один ___, чтобы сделать полный оборот вокруг оси».") ],
+        after: t("One spin on the axis = **one day**. 🌍", "Өз осінен бір айналу = **бір тәулік**. 🌍", "Один оборот вокруг оси = **один день (сутки)**. 🌍") },
+      { t: "soc", open: true, svg: "axis", term: "axis",
+        q: t("Let's think like scientists! 🔬 Earth spins. One side faces the sun and gets sunlight. It is daytime there. What is it like on the side that faces **away** from the sun?",
+          "Ғалымдар сияқты ойлайық! 🔬 Жер айналады. Бір жағы Күнге қарап, күн сәулесін алады. Ол жақта — күндіз. Ал Күнге **қарама-қарсы** жақта қалай?",
+          "Давай думать как учёные! 🔬 Земля вращается. Одна сторона смотрит на Солнце и получает свет. Там день. А как на стороне, которая смотрит **от** Солнца?"),
         accept: [/night|dark|no (sun)?light|ночь|түн|темн|қараңғ/],
-        options: [ { l: "It is nighttime", ok: true }, { l: "It is also daytime", fb: "Does any sunlight reach the side that faces away from the sun?" }, { l: "It is summer", fb: "Seasons come from something else. Here we only think about light and dark." } ],
-        hints: [ "Does sunlight reach a side that is turned away from the sun?", "No sunlight means it is dark. What do we call the dark part of a day?" ],
-        after: "Spinning on its axis makes **day and night**. When it is daytime here, it is nighttime on the other side of Earth (Reader, p. 12)." },
+        options: [ { l: "It is nighttime", ok: true },
+                   { l: "It is also daytime", fb: t("Can sunlight reach the side that faces away from the sun?", "Күн сәулесі Күнге қарсы жаққа жете ала ма?", "Может ли солнечный свет попасть на сторону, отвёрнутую от Солнца?") },
+                   { l: "It is summer", fb: t("Seasons are a different topic. Here we think only about light and dark.", "Жыл мезгілдері — басқа тақырып. Мұнда тек жарық пен қараңғыны ойлаймыз.", "Времена года — другая тема. Здесь думаем только о свете и темноте.") } ],
+        re: t("Look at the picture: the side near the sun is light. The other side is dark.", "Суретке қара: Күнге жақын жағы — жарық. Екінші жағы — қараңғы.", "Посмотри на рисунок: сторона у Солнца — светлая. Другая сторона — тёмная."),
+        hints: [ t("No sunlight means it is ___.", "Күн сәулесі жоқ болса, ол жақ ___ болады.", "Нет солнечного света — значит, там ___."),
+                 t("What do we call the dark part of the day? 🌙", "Тәуліктің қараңғы бөлігін не деп атаймыз? 🌙", "Как называется тёмная часть суток? 🌙") ],
+        after: t("Spinning on the axis gives us **day and night**. When it is day here, it is night on the other side of Earth! (Reader, p. 12)", "Өз осінен айналу **күн мен түнді** береді. Бізде күндіз болғанда, Жердің арғы жағында түн болады! (Оқулық, 12-бет)", "Вращение вокруг оси даёт нам **день и ночь**. Когда у нас день, на другой стороне Земли ночь! (Книга, с. 12)") },
       { t: "dir", svg: "tilt",
-        text: "One more fact. Earth's axis is [[tilted]], tipped to one side. When your part of Earth is tilted **toward** the sun, the sunlight is more direct and it is **summer**. When it is tilted **away**, it is **winter**. So the tilt of the axis creates the seasons (Reader, p. 14)." },
-      { t: "dir", text: "Let's put it together:\n• **orbit**: the path around the sun → **one year**\n• **axis**: the imaginary line Earth spins around → **one day**, day and night\nTime for a game!" },
+        text: t("One more cool fact! 😎 Earth's axis is [[tilted]]. That means it leans to one side. When our part of Earth leans **toward** the sun, it is **summer** ☀️. When it leans **away**, it is **winter** ❄️. So the tilt makes the seasons. (Reader, p. 14)",
+          "Тағы бір қызық дерек! 😎 Жердің осі **көлбеу** (tilted), яғни бір жағына қисайған. Біздің бөлігіміз Күнге **қарай** қисайғанда — **жаз** ☀️. Күннен **алыс** қисайғанда — **қыс** ❄️. Сонымен, жыл мезгілдерін осьтің көлбеулігі жасайды. (Оқулық, 14-бет)",
+          "Ещё один интересный факт! 😎 Ось Земли **наклонена** (tilted). Когда наша часть Земли наклонена **к** Солнцу — **лето** ☀️. Когда **от** Солнца — **зима** ❄️. Так наклон создаёт времена года. (Книга, с. 14)") },
+      { t: "dir", text: t("Let's remember:\n• **orbit** = the path around the sun → **1 year**\n• **axis** = the line Earth spins around → **1 day**, day and night\nGame time! 🎮",
+          "Есте сақтайық:\n• **orbit** (орбита) = Күнді айналатын жол → **1 жыл**\n• **axis** (ось) = Жер айналатын сызық → **1 тәулік**, күн мен түн\nОйын уақыты! 🎮",
+          "Запомним:\n• **orbit** (орбита) = путь вокруг Солнца → **1 год**\n• **axis** (ось) = линия, вокруг которой вращается Земля → **1 день**, день и ночь\nВремя игры! 🎮") },
       { t: "game", game: "sort", cfg: {
-        title: "Orbit or Axis?", intro: "Sort each clue into the right term. Be quick: 3 correct in a row gives a combo bonus!",
+        title: "Orbit or Axis?", intro: t("Put each clue in the right box. Get 3 right in a row for a bonus! ⚡", "Әр кілтті дұрыс қорапқа сал. Қатарынан 3 дұрыс жауап — бонус! ⚡", "Положи каждую подсказку в правильную коробку. 3 правильных подряд — бонус! ⚡"),
         bins: ["orbit", "axis"],
         items: [
           { x: "takes Earth about 365 days, one year", b: "orbit", why: "One trip around the sun takes one year." },
-          { x: "an imaginary straight line through the middle of Earth", b: "axis", why: "That is the definition of axis." },
+          { x: "an imaginary straight line through the middle of Earth", b: "axis", why: "That is what an axis is." },
           { x: "a toy top spins around it", b: "axis", why: "A top spins around its axis, just like Earth." },
-          { x: "the curved path Earth takes around the sun", b: "orbit", why: "That is the definition of orbit." },
-          { x: "spinning around it makes day and night", b: "axis", why: "Rotating on the axis gives us day and night." },
+          { x: "the curved path Earth takes around the sun", b: "orbit", why: "That is what an orbit is." },
+          { x: "spinning around it makes day and night", b: "axis", why: "Spinning on the axis gives us day and night." },
           { x: "the moon travels in one around Earth", b: "orbit", why: "The moon orbits Earth about once a month." },
-          { x: "it is tilted, so we have seasons", b: "axis", why: "The tilted axis creates the seasons." },
+          { x: "it is tilted, so we have seasons", b: "axis", why: "The tilted axis makes the seasons." },
           { x: "all eight planets have one around the sun", b: "orbit", why: "Every planet orbits the sun." } ] } },
       { t: "explore", suggestions: [ "What is the difference between orbit and rotate?", "Why do we have seasons?", "Is the sun a star?", "What does “solar” mean?" ] },
       { t: "exit", qs: [
         { q: "The curved path a planet takes around the sun is its…", o: [ "axis", "orbit", "season" ], a: 1, why: "An orbit is the curved path around another object." },
-        { q: "Earth spins on its ___, and this makes day and night.", o: [ "orbit", "sun", "axis" ], a: 2, why: "Earth rotates on its axis once a day." },
+        { q: "Earth spins on its ___, and this makes day and night.", o: [ "orbit", "sun", "axis" ], a: 2, why: "Earth spins on its axis once a day." },
         { q: "How long does it take Earth to orbit the sun once?", o: [ "one day", "one month", "about 365 days (one year)" ], a: 2, why: "One orbit = 365 days = one year." } ] }
     ] },
 
   { id: "L2", title: "Eclipse", sub: "When light is blocked", terms: ["eclipse"], src: "Reader Ch. 2 “The Moon”, pp. 16–23",
     badge: { id: "eclipse", name: "Eclipse Expert" },
     steps: [
-      { t: "dir", nocount: true, text: "Welcome to **Lesson 2**! Today's key term is [[eclipse]]. We use Chapter 2 of the Reader, “The Moon.” To understand eclipses, we first need to understand moonlight." },
-      { t: "soc", q: "At night the moon can look white, gray, or silver. Sometimes it seems to shine and glow. Does the moon make its **own** light, like the sun?",
-        options: [ { l: "Yes, it makes its own light", fb: "It does look like it glows! But the book says the moon is “a ball of rock that gives off no light of its own.”" }, { l: "No, it doesn't", ok: true } ],
-        hints: [ "The moon is a ball of **rock**. Can a rock make light the way the sun's hot gases do?" ],
-        after: "The moon is a ball of rock. It makes no light of its own." },
-      { t: "soc", open: true, q: "So where does moonlight come from? A clue from page 16: “It simply **reflects** light from the sun.”\nWhat do you think *reflects* means?",
-        accept: [/bounc|back|mirror|return|отраж|шағыл|hits?.*(off|back)/],
-        options: [ { l: "Light hits the moon and bounces off", ok: true }, { l: "The moon makes light inside", fb: "Remember: the moon gives off no light of its own." }, { l: "The moon hides the light", fb: "Hiding light is closer to an eclipse. We'll get there soon!" } ],
-        hints: [ "The very next sentence in the book explains it: “That means light from the sun hits the moon and ___ off.”" ],
-        after: "To **reflect** means light hits something and **bounces off**. Moonlight is really sunlight bouncing off the moon." },
-      { t: "dir", text: "The moon also moves. It [[orbit|orbits]] Earth (remember Lesson 1?), and one trip takes about **one month**. The moon seems to change shape during the month, but it is still a round ball. We just see different amounts of the sunlight it reflects (Reader, p. 18)." },
-      { t: "dir", text: "Sometimes Earth, the moon, and the sun all line up in a **direct line**. Then something special can happen. One object blocks the sunlight from reaching another. This is an [[eclipse]]." },
+      { t: "dir", nocount: true, text: t("Welcome to **Lesson 2**! 🌙 Our new word is [[eclipse]]. It is from Chapter 2, “The Moon.” First, let's talk about moonlight.",
+        "**2-сабаққа** қош келдің! 🌙 Жаңа сөзіміз — **eclipse** (тұтылу). Ол 2-тараудан, «Ай». Алдымен ай сәулесі туралы сөйлесейік.",
+        "Добро пожаловать на **урок 2**! 🌙 Наше новое слово — **eclipse** (затмение). Оно из 2-й главы «Луна». Сначала поговорим о лунном свете.") },
+      { t: "soc", term: "reflect",
+        q: t("At night the moon can look white or silver. It seems to shine. ✨ Does the moon make its **own** light, like the sun?", "Түнде Ай ақ немесе күміс түсті болып көрінеді. Ол жарқырап тұрғандай. ✨ Ай Күн сияқты **өз** жарығын шығара ма?", "Ночью Луна может казаться белой или серебристой. Кажется, что она светится. ✨ Даёт ли Луна **свой** свет, как Солнце?"),
+        options: [ { l: t("Yes, it makes its own light", "Иә, өз жарығын шығарады", "Да, она даёт свой свет"),
+                     fb: t("It does look like it glows! But the book says the moon gives off **no light of its own**.", "Ол шынымен жарқырайтын сияқты! Бірақ кітапта Айдың **өз жарығы жоқ** делінген.", "Кажется, что она светится! Но в книге сказано, что у Луны **нет своего света**.") },
+                   { l: t("No, it doesn't", "Жоқ, шығармайды", "Нет, не даёт"), ok: true } ],
+        re: t("The moon is a ball of **rock**. The sun is made of hot gases. Can a rock make light?", "Ай — **тастан** тұратын шар. Күн ыстық газдардан тұрады. Тас жарық шығара ала ма?", "Луна — это шар из **камня**. Солнце состоит из горячих газов. Может ли камень давать свет?"),
+        hints: [ t("A rock is not hot like the sun. Can it shine by itself?", "Тас Күн сияқты ыстық емес. Ол өздігінен жарық бере ме?", "Камень не горячий, как Солнце. Может ли он светиться сам?") ],
+        after: t("The moon is a ball of rock. It makes **no light** of its own.", "Ай — тас шар. Оның **өз жарығы жоқ**.", "Луна — каменный шар. У неё **нет** своего света.") },
+      { t: "soc", open: true, term: "reflect",
+        q: t("So where does moonlight come from? 🤔 Clue from page 16: “It simply **reflects** light from the sun.”\nWhat does *reflect* mean?", "Сонда ай сәулесі қайдан келеді? 🤔 16-беттегі кілт: “It simply **reflects** light from the sun.”\n*Reflect* сөзі нені білдіреді?", "Тогда откуда лунный свет? 🤔 Подсказка со страницы 16: “It simply **reflects** light from the sun.”\nЧто значит *reflect*?"),
+        accept: [/bounc|back|mirror|return|отраж|отскак|шағыл|серпіл|hits?.*(off|back)/],
+        options: [ { l: t("Light hits the moon and bounces off", "Жарық Айға тиіп, кері серпіледі", "Свет попадает на Луну и отскакивает"), ok: true },
+                   { l: t("The moon makes light inside", "Ай жарықты ішінде жасайды", "Луна делает свет внутри"), fb: t("Remember: the moon has no light of its own.", "Есіңде болсын: Айдың өз жарығы жоқ.", "Помни: у Луны нет своего света.") },
+                   { l: t("The moon hides the light", "Ай жарықты жасырады", "Луна прячет свет"), fb: t("Hiding light is more like an eclipse. We'll get there soon!", "Жарықты жасыру тұтылуға ұқсайды. Оған жақында жетеміз!", "Прятать свет — это больше похоже на затмение. Скоро до этого дойдём!") } ],
+        re: t("Sunlight travels to the moon. Then it comes back to our eyes.", "Күн сәулесі Айға жетеді. Сосын біздің көзімізге қайтып келеді.", "Солнечный свет летит к Луне. Потом он возвращается к нашим глазам."),
+        hints: [ t("The next sentence in the book says: “Light from the sun hits the moon and ___ off.”", "Кітаптағы келесі сөйлем: “Light from the sun hits the moon and ___ off.” Бос орынға қандай етістік келеді?", "Следующее предложение в книге: “Light from the sun hits the moon and ___ off.” Какой глагол нужен?") ],
+        after: t("**Reflect** = light hits something and **bounces off**. So moonlight is really sunlight! 🌞🌙", "**Reflect** (шағылыстыру) = жарық бір затқа тиіп, **кері серпіледі**. Яғни ай сәулесі — шын мәнінде күн сәулесі! 🌞🌙", "**Reflect** (отражать) = свет попадает на предмет и **отскакивает**. Значит, лунный свет — это на самом деле солнечный! 🌞🌙") },
+      { t: "dir", text: t("The moon moves, too. It [[orbit|orbits]] Earth (remember Lesson 1?). One trip takes about **one month**. The moon seems to change shape, but it is always a round ball. We just see different parts of its light. (Reader, p. 18)",
+          "Ай да қозғалады. Ол Жерді **орбитамен** айналады (1-сабақ есіңде ме?). Бір айналым шамамен **бір ай** алады. Айдың пішіні өзгеріп тұрғандай көрінеді, бірақ ол әрқашан дөңгелек шар. Біз оның жарығының әр түрлі бөлігін ғана көреміз. (Оқулық, 18-бет)",
+          "Луна тоже движется. Она движется по **орбите** вокруг Земли (помнишь урок 1?). Один круг занимает примерно **один месяц**. Кажется, что Луна меняет форму, но она всегда круглый шар. Мы просто видим разные части её света. (Книга, с. 18)") },
+      { t: "dir", text: t("Sometimes the sun, the moon and Earth stand in a **straight line**. Then one object can block the sunlight from another. This is called an [[eclipse]]! 🌑",
+          "Кейде Күн, Ай және Жер **бір түзудің** бойында тұрады. Сонда бір дене екіншісінен күн сәулесін жауып қалады. Мұны **eclipse** (тұтылу) дейді! 🌑",
+          "Иногда Солнце, Луна и Земля встают в **одну линию**. Тогда одно тело закрывает солнечный свет от другого. Это называется **eclipse** (затмение)! 🌑") },
       { t: "term", term: "eclipse" },
-      { t: "soc", open: true, svg: "solar", q: "There are two kinds of eclipse. In the first kind, people on Earth **can't see the sun** for a while. Look at the picture. Which object moves **between** the sun and Earth?",
-        accept: [/moon|лун|=ай/],
-        options: [ { l: "Mars", fb: "Mars is far away. Which object orbits Earth once a month?" }, { l: "The moon", ok: true }, { l: "A cloud", fb: "Clouds can hide the sun, but that is weather, not an eclipse. Think of objects in space." } ],
-        hints: [ "It is the object we started this lesson with." ],
-        after: "The **moon** moves between the sun and Earth. This is a [[solar eclipse]], an eclipse of the sun. Remember from Lesson 1: *solar* comes from *sol*, “the sun.”" },
-      { t: "soc", open: true, svg: "lunar", q: "In the second kind, the moon passes **behind** Earth. Look at the picture: a shadow covers the moon. Whose shadow is it?",
+      { t: "soc", open: true, svg: "solar", term: "solar eclipse",
+        q: t("There are two kinds of eclipse. In the first kind, people on Earth **can't see the sun** for a while. Look at the picture. What moves **between** the sun and Earth?", "Тұтылудың екі түрі бар. Біріншісінде Жердегі адамдар біраз уақыт **Күнді көре алмайды**. Суретке қара. Күн мен Жердің **арасына** не түседі?", "Есть два вида затмения. В первом люди на Земле какое-то время **не видят Солнце**. Посмотри на рисунок. Что встаёт **между** Солнцем и Землёй?"),
+        accept: [/moon|лун|(^|\s)ай(\s|$)/],
+        options: [ { l: "Mars", fb: t("Mars is very far away. What goes around Earth once a month?", "Марс өте алыста. Жерді айына бір рет не айналады?", "Марс очень далеко. Что обходит Землю раз в месяц?") },
+                   { l: "The moon", ok: true },
+                   { l: "A cloud", fb: t("Clouds can hide the sun, but that's weather, not an eclipse. Think about space!", "Бұлт Күнді жаба алады, бірақ бұл — ауа райы, тұтылу емес. Ғарыш туралы ойла!", "Облака могут закрыть Солнце, но это погода, а не затмение. Подумай о космосе!") } ],
+        re: t("In an eclipse, one object in space blocks the sunlight. Look at the small circle in the middle of the picture.", "Тұтылуда ғарыштағы бір дене күн сәулесін жабады. Суреттің ортасындағы кішкентай дөңгелекке қара.", "При затмении одно тело в космосе закрывает солнечный свет. Посмотри на маленький круг в середине рисунка."),
+        hints: [ t("It's the object from the start of this lesson. 🌙", "Ол — сабақтың басындағы дене. 🌙", "Это то тело, с которого начался урок. 🌙") ],
+        after: t("The **moon** moves between the sun and Earth. This is a [[solar eclipse]]. Remember: *solar* comes from *sol*, “the sun.” ☀️", "**Ай** Күн мен Жердің арасына түседі. Бұл — **solar eclipse** (Күннің тұтылуы). Есіңде болсын: *solar* сөзі *sol* — «күн» сөзінен шыққан. ☀️", "**Луна** встаёт между Солнцем и Землёй. Это **solar eclipse** (солнечное затмение). Помни: *solar* происходит от *sol* — «солнце». ☀️") },
+      { t: "soc", open: true, svg: "lunar", term: "lunar eclipse",
+        q: t("In the second kind, the moon goes **behind** Earth. Look: a shadow covers the moon. Whose shadow is it?", "Екінші түрінде Ай Жердің **артына** өтеді. Қара: Айды көлеңке жауып тұр. Бұл кімнің көлеңкесі?", "Во втором виде Луна уходит **за** Землю. Смотри: Луну закрывает тень. Чья это тень?"),
         accept: [/earth|земл|жер/],
-        options: [ { l: "The sun's", fb: "The sun gives light. A shadow appears when something blocks the light." }, { l: "Earth's", ok: true }, { l: "The moon's own shadow", fb: "Something else must block the light before it reaches the moon. What is in the middle?" } ],
-        hints: [ "Which object is in the middle, blocking the sunlight from reaching the moon?" ],
-        after: "It is **Earth's shadow**. Earth has blocked out the sun and left part of the moon in darkness. This is a [[lunar eclipse]], an eclipse of the moon." },
-      { t: "soc", q: "Which eclipse is **dangerous** to look at directly?",
-        options: [ { l: "A solar eclipse: the sun is very bright and could burn your eyes", ok: true }, { l: "A lunar eclipse: the moon is too dark", fb: "A dark moon cannot hurt your eyes. Which object is extremely bright?" } ],
-        hints: [ "Which of the two eclipses makes you look toward the sun?" ],
-        after: "**Never** look directly at a solar eclipse. It is safe to look at an eclipse of the moon (Reader, p. 22)." },
-      { t: "dir", text: "Eclipses don't happen often, because the sun, Earth, and the moon must line up just right.\n• **Solar eclipse**: Sun → Moon → Earth. Seen only from a narrow strip of Earth, so very rare to see.\n• **Lunar eclipse**: Sun → Earth → Moon. Seen from half of Earth at a time, so seen more often.\nNow you build them!" },
+        options: [ { l: t("The sun's", "Күннің", "Солнца"), fb: t("The sun gives light. A shadow appears when something **blocks** the light.", "Күн жарық береді. Көлеңке бір нәрсе жарықты **жапқанда** пайда болады.", "Солнце даёт свет. Тень появляется, когда что-то **закрывает** свет.") },
+                   { l: t("Earth's", "Жердің", "Земли"), ok: true },
+                   { l: t("The moon's own", "Айдың өзінің", "Самой Луны"), fb: t("Something in the middle blocks the light first. What is in the middle?", "Ортадағы бір дене жарықты жабады. Ортада не тұр?", "Что-то в середине закрывает свет. Что в середине?") } ],
+        re: t("A shadow comes from the object that is **in the middle**, between the sun and the moon.", "Көлеңке Күн мен Айдың **ортасында** тұрған денеден түседі.", "Тень отбрасывает то тело, которое **посередине**, между Солнцем и Луной."),
+        hints: [ t("Look at the picture. Which big blue planet is in the middle?", "Суретке қара. Ортадағы үлкен көк ғаламшар қайсы?", "Посмотри на рисунок. Какая большая голубая планета посередине?") ],
+        after: t("It's **Earth's shadow**! Earth blocks the sunlight, so the moon goes dark. This is a [[lunar eclipse]]. 🌒", "Бұл — **Жердің көлеңкесі**! Жер күн сәулесін жабады, сондықтан Ай қараяды. Бұл — **lunar eclipse** (Айдың тұтылуы). 🌒", "Это **тень Земли**! Земля закрывает солнечный свет, и Луна темнеет. Это **lunar eclipse** (лунное затмение). 🌒") },
+      { t: "soc", term: "solar eclipse",
+        q: t("Safety question! ⚠️ Which eclipse is **dangerous** to look at?", "Қауіпсіздік сұрағы! ⚠️ Қай тұтылуға қарау **қауіпті**?", "Вопрос о безопасности! ⚠️ На какое затмение **опасно** смотреть?"),
+        options: [ { l: t("A solar eclipse: the sun is very bright and can burn your eyes", "Күннің тұтылуы: Күн өте жарық, көзді күйдіруі мүмкін", "Солнечное затмение: Солнце очень яркое и может обжечь глаза"), ok: true },
+                   { l: t("A lunar eclipse: the moon is too dark", "Айдың тұтылуы: Ай тым қараңғы", "Лунное затмение: Луна слишком тёмная"), fb: t("A dark moon can't hurt your eyes. What is super bright?", "Қараңғы Ай көзге зиян тигізбейді. Не өте жарық?", "Тёмная Луна не может навредить глазам. Что очень яркое?") } ],
+        re: t("Think: which eclipse makes you look toward the **sun**?", "Ойлан: қай тұтылуда **Күнге** қарауға тура келеді?", "Подумай: при каком затмении приходится смотреть на **Солнце**?"),
+        hints: [ t("The sun is very, very bright. 😎", "Күн өте-өте жарық. 😎", "Солнце очень-очень яркое. 😎") ],
+        after: t("**Never** look straight at a solar eclipse! It's safe to look at a lunar eclipse. (Reader, p. 22)", "Күннің тұтылуына **ешқашан** тура қарама! Айдың тұтылуына қарау қауіпсіз. (Оқулық, 22-бет)", "**Никогда** не смотри прямо на солнечное затмение! На лунное затмение смотреть безопасно. (Книга, с. 22)") },
+      { t: "dir", text: t("Eclipses don't happen often. The sun, Earth and the moon must line up just right.\n• **Solar eclipse**: Sun → Moon → Earth. Very rare to see.\n• **Lunar eclipse**: Sun → Earth → Moon. Seen more often.\nNow you build them! 🛠️",
+          "Тұтылу жиі болмайды. Күн, Жер және Ай дәл бір түзудің бойында тұруы керек.\n• **Күннің тұтылуы**: Күн → Ай → Жер. Көру өте сирек.\n• **Айдың тұтылуы**: Күн → Жер → Ай. Жиірек көрінеді.\nЕнді оларды өзің құрастыр! 🛠️",
+          "Затмения бывают нечасто. Солнце, Земля и Луна должны встать точно в линию.\n• **Солнечное затмение**: Солнце → Луна → Земля. Увидеть очень редко.\n• **Лунное затмение**: Солнце → Земля → Луна. Видно чаще.\nТеперь собери их сам! 🛠️") },
       { t: "game", game: "eclipse" },
       { t: "explore", suggestions: [ "What is the difference between a solar and a lunar eclipse?", "Does the moon make its own light?", "How often do eclipses happen?", "How long does the moon take to orbit Earth?" ] },
       { t: "exit", qs: [
-        { q: "An eclipse happens when…", o: [ "the moon changes shape", "one object in space blocks the light from the sun", "a planet spins on its axis" ], a: 1, why: "An eclipse is the blocking of the sun's light by another object in space." },
+        { q: "An eclipse happens when…", o: [ "the moon changes shape", "one object in space blocks the light from the sun", "a planet spins on its axis" ], a: 1, why: "In an eclipse, one object in space blocks the sun's light." },
         { q: "During a solar eclipse, which object is in the middle?", o: [ "Earth", "the moon", "the sun" ], a: 1, why: "The moon gets between the sun and Earth." },
-        { q: "During a lunar eclipse, the moon is covered by…", o: [ "Earth's shadow", "a cloud", "the sun's light" ], a: 0, why: "The moon passes behind Earth, into Earth's shadow." } ] }
+        { q: "During a lunar eclipse, the moon is covered by…", o: [ "Earth's shadow", "a cloud", "the sun's light" ], a: 0, why: "The moon goes behind Earth, into Earth's shadow." } ] }
     ] },
 
   { id: "L3", title: "Naked Eye & Probe", sub: "How we study the planets", terms: ["naked eye", "probe"], src: "Reader Ch. 3 “The Planets Closest to the Sun”, pp. 24–31",
     badge: { id: "mission", name: "Mission Control" },
     steps: [
-      { t: "dir", nocount: true, text: "Welcome to **Lesson 3**! Two key terms today: [[naked eye]] and [[probe]]. They come from Chapter 3, “The Planets Closest to the Sun: Mercury, Venus, Earth, and Mars.”" },
-      { t: "soc", q: "People from Mesopotamia, the Greeks, Mayans, Incas, and Aztecs studied the planets **thousands of years ago**. Do you think they had telescopes?",
-        options: [ { l: "Yes", fb: "The book says: “**Now**, we have telescopes.” So what about thousands of years ago?" }, { l: "No", ok: true } ],
-        hints: [ "Telescopes are tools we have “now”, the book says." ],
-        after: "They had no telescopes. But they still studied the planets!" },
-      { t: "soc", open: true, q: "The book says: “They used just their **naked eye** to study the planets.”\nWhat do you think *naked eye* means?",
+      { t: "dir", nocount: true, text: t("Welcome to **Lesson 3**! 🔭 Two new words today: [[naked eye]] and [[probe]]. They are from Chapter 3 of our Reader.",
+        "**3-сабаққа** қош келдің! 🔭 Бүгін екі жаңа сөз: **naked eye** (жай көз) және **probe** (зонд). Олар Оқулықтың 3-тарауынан.",
+        "Добро пожаловать на **урок 3**! 🔭 Сегодня два новых слова: **naked eye** (невооружённый глаз) и **probe** (зонд). Они из 3-й главы книги.") },
+      { t: "soc", term: "telescope",
+        q: t("Thousands of years ago, the Greeks, Mayans, Incas and Aztecs studied the planets. Do you think they had telescopes?", "Мыңдаған жыл бұрын гректер, майялар, инктер және ацтектер ғаламшарларды зерттеген. Сенің ойыңша, оларда телескоп болды ма?", "Тысячи лет назад греки, майя, инки и ацтеки изучали планеты. Как ты думаешь, у них были телескопы?"),
+        options: [ { l: t("Yes", "Иә", "Да"), fb: t("The book says: “**Now**, we have telescopes.” So what about long ago?", "Кітапта: «**Қазір** бізде телескоптар бар», — делінген. Ал ертеде ше?", "В книге: «**Сейчас** у нас есть телескопы». А как было давно?") },
+                   { l: t("No", "Жоқ", "Нет"), ok: true } ],
+        re: t("Telescopes are tools we have **today**. Long ago, life was very different.", "Телескоп — бізде **бүгін** бар құрал. Ертеде өмір мүлдем басқа болған.", "Телескопы — это инструменты, которые есть у нас **сегодня**. Давно жизнь была совсем другой."),
+        hints: [ t("Look for the word “now” in the book's sentence.", "Кітаптағы сөйлемнен «now» (қазір) сөзін тап.", "Найди в предложении из книги слово «now» (сейчас).") ],
+        after: t("They had **no** telescopes. But they still studied the planets! 🤩", "Оларда телескоп **болмаған**. Бірақ олар бәрібір ғаламшарларды зерттеген! 🤩", "У них **не было** телескопов. Но они всё равно изучали планеты! 🤩") },
+      { t: "soc", open: true, term: "naked eye",
+        q: t("The book says: “They used just their **naked eye** to study the planets.”\nWhat do you think *naked eye* means? 👀", "Кітапта: “They used just their **naked eye** to study the planets.”\nСенің ойыңша, *naked eye* нені білдіреді? 👀", "В книге: “They used just their **naked eye** to study the planets.”\nКак ты думаешь, что значит *naked eye*? 👀"),
         accept: [/own eye|their eye|your eye|my eye|just (the |their |your |my )?eye|only (the |their |your |my )?eye|without|no (tool|telescope)|глаз|көз/],
-        options: [ { l: "Looking with just your own eyes, no tools", ok: true }, { l: "Closing your eyes", fb: "Then you couldn't see anything! They did look at the sky." }, { l: "Looking through a telescope", fb: "Remember, they had no telescopes." } ],
-        hints: [ "Here “naked” means “with nothing added.” What could people add to their eyes to see farther?", "They had no telescope. So what did they look with?" ],
-        after: "The **naked eye** is just your eye, with no telescope or other tool." },
+        options: [ { l: t("Looking with just your eyes, no tools", "Тек өз көзіңмен қарау, құралсыз", "Смотреть просто глазами, без приборов"), ok: true },
+                   { l: t("Closing your eyes", "Көзді жұму", "Закрыть глаза"), fb: t("Then you can't see anything! They did look at the sky.", "Онда ештеңе көрінбейді ғой! Олар аспанға қараған.", "Тогда ничего не увидишь! Они же смотрели на небо.") },
+                   { l: t("Looking through a telescope", "Телескоппен қарау", "Смотреть в телескоп"), fb: t("Remember, they had no telescopes.", "Есіңде болсын, оларда телескоп болмаған.", "Помни: у них не было телескопов.") } ],
+        re: t("They had **no tools**. Only their eyes. Here “naked” means “with nothing added.”", "Оларда **құрал болмаған**. Тек көздері ғана. Мұнда “naked” — «ештеңе қосылмаған» деген мағынада.", "У них **не было приборов**. Только глаза. Здесь “naked” значит «ничего не добавлено»."),
+        hints: [ t("What could you add to your eye to see far? A telescope! They had no telescope. So they used just their…", "Алысты көру үшін көзге не қосуға болады? Телескоп! Оларда телескоп болмаған. Сонда олар тек… қолданған.", "Что можно добавить к глазу, чтобы видеть далеко? Телескоп! У них его не было. Значит, они использовали только…"),
+                 t("…eyes! 👀", "…көздерін! 👀", "…глаза! 👀") ],
+        after: t("The **naked eye** is just your eye, with no telescope or other tool.", "**Naked eye** (жай көз) — бұл жай ғана өз көзің, телескопсыз және басқа құралсыз.", "**Naked eye** (невооружённый глаз) — это просто твои глаза, без телескопа и других приборов.") },
       { t: "term", term: "naked eye" },
-      { t: "dir", text: "Today we have [[telescope|telescopes]] and other tools that help us **get a better look** at the planets (Reader, p. 24). But some questions are hard to answer even with a telescope on Earth." },
-      { t: "soc", q: "Imagine you want to know what the **rocks on Mars** are like. Looking from Earth is not enough. What would you need to do?",
-        options: [ { l: "Look harder with the naked eye", fb: "Mars is very far away. Even a telescope can't dig up a rock!" }, { l: "Send a tool to Mars to explore it", ok: true }, { l: "Wait for Mars to come to Earth", fb: "Planets stay in their orbits around the sun. Mars won't come to us!" } ],
-        hints: [ "To study a rock up close, something has to go **there**." ],
-        after: "And that tool has a name: a **probe**." },
+      { t: "dir", text: t("Today we have [[telescope|telescopes]]. They help us **get a better look** at the planets. (Reader, p. 24) But some questions are hard, even with a telescope! 🤔",
+          "Бүгін бізде **телескоптар** бар. Олар ғаламшарларды **жақсырақ көруге** көмектеседі. (Оқулық, 24-бет) Бірақ кейбір сұрақтарға телескоппен де жауап беру қиын! 🤔",
+          "Сегодня у нас есть **телескопы**. Они помогают **лучше рассмотреть** планеты. (Книга, с. 24) Но на некоторые вопросы трудно ответить даже с телескопом! 🤔") },
+      { t: "soc", term: "probe",
+        q: t("Imagine you want to know what the **rocks on Mars** are like. Looking from Earth is not enough. What can we do? 🚀", "Елестет: сен **Марстағы тастардың** қандай екенін білгің келеді. Жерден қарау жеткіліксіз. Не істей аламыз? 🚀", "Представь: ты хочешь узнать, какие **камни на Марсе**. Смотреть с Земли недостаточно. Что мы можем сделать? 🚀"),
+        options: [ { l: t("Look harder with the naked eye", "Жай көзбен мұқият қарау", "Внимательнее смотреть глазами"), fb: t("Mars is very far away. Eyes can't pick up a rock!", "Марс өте алыста. Көз тасты ала алмайды ғой!", "Марс очень далеко. Глаза не могут поднять камень!") },
+                   { l: t("Send a tool to Mars to explore it", "Марсты зерттеу үшін оған құрал жіберу", "Отправить на Марс прибор, чтобы его исследовать"), ok: true },
+                   { l: t("Wait for Mars to come to Earth", "Марстың Жерге келуін күту", "Ждать, пока Марс прилетит к Земле"), fb: t("Planets stay on their orbits. Mars won't come to us!", "Ғаламшарлар өз орбитасында қалады. Марс бізге келмейді!", "Планеты остаются на своих орбитах. Марс к нам не прилетит!") } ],
+        re: t("To study a rock up close, something must **go there**.", "Тасты жақыннан зерттеу үшін бір нәрсе **сонда баруы** керек.", "Чтобы изучить камень вблизи, что-то должно **туда попасть**."),
+        hints: [ t("People can't easily go to Mars. But a machine can! 🤖", "Адамдар Марсқа оңай бара алмайды. Бірақ машина бара алады! 🤖", "Людям трудно попасть на Марс. А машина может! 🤖") ],
+        after: t("And that tool has a name: a **probe**! 🛰️", "Ал ол құралдың аты бар: **probe** (зонд)! 🛰️", "И у этого прибора есть название: **probe** (зонд)! 🛰️") },
       { t: "term", term: "probe" },
-      { t: "soc", open: true, q: "One probe that went to Mars found **ice**. That was big news! Ice is frozen water. Why do you think finding water on Mars was so exciting?",
-        accept: [/life|live|alive|living|жизн|өмір|тірі|жив/],
-        options: [ { l: "Mars could get colder", fb: "Scientists were thinking about something much bigger." }, { l: "There might be life on Mars", ok: true }, { l: "People could go ice skating there", fb: "That would be fun! But scientists were thinking about something bigger." } ],
-        hints: [ "Finish the book's sentence: “If there is water on Mars, there might be ___.”" ],
-        after: "“If there is water on Mars, there might be life.” (Reader, p. 30). Experts still argue about it: some say Mars is too cold and too dry, others think something might live under the rocks." },
-      { t: "dir", text: "Let's put it together:\n• **naked eye**: just your eyes → how people studied planets long ago\n• **telescope**: a tool for a better look from Earth\n• **probe**: a tool sent to explore → landed on Mars, took photos, dug up rocks, found ice\nMission Control needs you!" },
+      { t: "soc", open: true, term: "probe",
+        q: t("A probe on Mars found **ice**! 🧊 That was big news. Ice is frozen water. Why was water on Mars so exciting?", "Марстағы зонд **мұз** тапты! 🧊 Бұл үлкен жаңалық болды. Мұз — қатқан су. Марста судың болуы неге соншалық қызық?", "Зонд на Марсе нашёл **лёд**! 🧊 Это была большая новость. Лёд — это замёрзшая вода. Почему вода на Марсе — это так интересно?"),
+        accept: [/life|live|alive|living|жизн|өмір|тірі|тіршілік|жив/],
+        options: [ { l: t("Mars could get colder", "Марс суып кетуі мүмкін", "Марс может стать холоднее"), fb: t("Scientists were thinking about something much bigger!", "Ғалымдар әлдеқайда маңызды нәрсе туралы ойлаған!", "Учёные думали о чём-то гораздо более важном!") },
+                   { l: t("There might be life on Mars", "Марста тіршілік болуы мүмкін", "На Марсе может быть жизнь"), ok: true },
+                   { l: t("People could go ice skating there", "Онда коньки тебуге болады", "Там можно кататься на коньках"), fb: t("That would be fun! 😄 But scientists were thinking about something bigger.", "Бұл қызық болар еді! 😄 Бірақ ғалымдар маңыздырақ нәрсені ойлаған.", "Было бы весело! 😄 Но учёные думали о чём-то важнее.") } ],
+        re: t("Ice is frozen **water**. Read the book's sentence again: “If there is water on Mars, there might be…”", "Мұз — қатқан **су**. Кітаптағы сөйлемді қайта оқы: «Марста су болса, онда … болуы мүмкін».", "Лёд — это замёрзшая **вода**. Перечитай предложение из книги: «Если на Марсе есть вода, там может быть…»"),
+        hints: [ t("The missing word has 4 letters. It starts with **L**.", "Жетіспейтін ағылшын сөзі 4 әріптен тұрады. **L** әрпінен басталады.", "Пропущенное английское слово из 4 букв. Начинается на **L**.") ],
+        after: t("“If there is water on Mars, there might be **life**.” (Reader, p. 30) Experts still don't agree. Some say Mars is too cold and dry. Others think something might live under the rocks!",
+          "«Марста су болса, онда **тіршілік** болуы мүмкін». (Оқулық, 30-бет) Мамандар әлі келісе алмай жүр. Біреулер Марс тым суық әрі құрғақ дейді. Басқалары тастардың астында бірдеңе тіршілік етуі мүмкін деп ойлайды!",
+          "«Если на Марсе есть вода, там может быть **жизнь**». (Книга, с. 30) Учёные до сих пор спорят. Одни говорят, что на Марсе слишком холодно и сухо. Другие думают, что под камнями может быть что-то живое!") },
+      { t: "dir", text: t("Let's remember:\n• **naked eye** = just your eyes → people long ago\n• **telescope** = a better look from Earth\n• **probe** = a tool sent to explore → landed on Mars, took photos, dug up rocks, found ice\nMission Control needs you! 🚀",
+          "Есте сақтайық:\n• **naked eye** (жай көз) = тек өз көзің → ертедегі адамдар\n• **telescope** (телескоп) = Жерден жақсырақ көру\n• **probe** (зонд) = зерттеуге жіберілетін құрал → Марсқа қонды, суретке түсірді, тас қазды, мұз тапты\nМиссияны басқару орталығына сен керексің! 🚀",
+          "Запомним:\n• **naked eye** (невооружённый глаз) = просто глаза → люди в древности\n• **telescope** (телескоп) = лучше рассмотреть с Земли\n• **probe** (зонд) = прибор для исследования → сел на Марс, сделал фото, выкопал камни, нашёл лёд\nЦентру управления полётами нужна твоя помощь! 🚀") },
       { t: "game", game: "sort", cfg: {
-        title: "Mission Control", intro: "Choose the right way to study space for each mission. Combo bonus for 3 in a row!",
+        title: "Mission Control", intro: t("How should we study space? Pick the right tool for each mission. 3 in a row = bonus! ⚡", "Ғарышты қалай зерттейміз? Әр миссияға дұрыс құралды таңда. Қатарынан 3 = бонус! ⚡", "Как изучать космос? Выбери правильный инструмент для каждой миссии. 3 подряд = бонус! ⚡"),
         bins: ["naked eye", "telescope", "probe"],
         items: [
           { x: "Ancient Greeks watching the planets", b: "naked eye", why: "Long ago, people used just their naked eye." },
@@ -713,11 +936,11 @@ const LESSONS = [
           { x: "Mayans, Incas, and Aztecs studying the planets", b: "naked eye", why: "They had no telescopes." },
           { x: "Finding ice on Mars", b: "probe", why: "A probe that went to Mars found ice." },
           { x: "Seeing the moon from your yard on a clear night, no tools", b: "naked eye", why: "No tools = naked eye." },
-          { x: "A tool people use today to study planets without leaving Earth", b: "telescope", why: "Telescopes stay on Earth; probes travel." } ] } },
+          { x: "A tool people use today to study planets without leaving Earth", b: "telescope", why: "Telescopes stay on Earth. Probes travel." } ] } },
       { t: "explore", suggestions: [ "What is a probe?", "Why is Mars red?", "Could there be life on Mars?", "Which planets are closest to the sun?" ] },
       { t: "exit", qs: [
-        { q: "Looking at the sky with just your eyes and no tools is using your…", o: [ "telescope", "naked eye", "probe" ], a: 1, why: "Naked eye = your eye alone." },
-        { q: "A tool used to explore something, such as outer space, is a…", o: [ "probe", "planet", "orbit" ], a: 0, why: "That is the definition of probe." },
+        { q: "Looking at the sky with just your eyes and no tools is using your…", o: [ "telescope", "naked eye", "probe" ], a: 1, why: "Naked eye = your eyes only." },
+        { q: "A tool used to explore something, such as outer space, is a…", o: [ "probe", "planet", "orbit" ], a: 0, why: "That is what a probe is." },
         { q: "What did a probe find on Mars that was big news?", o: [ "ice", "a city", "a new moon" ], a: 0, why: "Ice is frozen water, and water could mean life." } ] }
     ] }
 ];
@@ -793,7 +1016,6 @@ const ROSTER = {
 const LEVELS = { s: { name: "Starter", hints: 3 }, m: { name: "Middle", hints: 2 }, a: { name: "Advanced", hints: 1 } };
 const LANGNAME = { kk: "Қазақша", ru: "Русский" };
 const RANKS = [ [0, "Space Cadet"], [60, "Star Explorer"], [150, "Orbit Navigator"], [260, "Mission Commander"] ];
-const PRAISE = [ "Yes!", "Exactly!", "Great thinking!", "Spot on!", "You got it!" ];
 
 let S = null;          // per-student saved state
 let LOGIN = null;
@@ -829,6 +1051,11 @@ function termSpan(key, disp) {
   if (S.prefs.level === "s") return `<strong>${disp}</strong> <span class="trn">(${esc(tr)})</span>`;
   return `<button type="button" class="term" data-tr="${esc(LANGNAME[S.prefs.lang] + ": " + tr)}">${disp}</button>`;
 }
+function fmtTr(str) {
+  let s = esc(str).replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (m, k, d) => "<strong>" + (d || k) + "</strong>");
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  return s.replace(/\n/g, "<br>");
+}
 function fmt(src) {
   let s = esc(pick(src));
   s = s.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (m, k, d) => termSpan(k, d || k));
@@ -839,6 +1066,21 @@ function fmt(src) {
 /* ============================ CHAT PRIMITIVES ============================ */
 const chat = $("#chat");
 const TAGS = { soc: "Think it through", dir: "Explanation", game: "Game", check: "Quick check", ask: "Your questions" };
+const TR_LABEL = { kk: "Аудару", ru: "Перевести" };
+const BACK = t("Now back to our question: 🙂", "Енді сұрағымызға оралайық: 🙂", "Теперь вернёмся к нашему вопросу: 🙂");
+const TR_HEAD = { kk: "Қазақша:", ru: "По-русски:" };
+let LAST = null;   // parts of the last tutor message that can be translated
+
+/* A message is a list of parts: plain strings stay as they are; t() objects carry kk/ru translations. */
+function flat(parts) { return (Array.isArray(parts) ? parts : [parts]).flat(Infinity).filter((p) => p !== null && p !== undefined && p !== ""); }
+function enText(parts) { return flat(parts).map(pick).join(""); }
+function trText(parts, lang) {
+  let any = false;
+  const s = flat(parts).map((p) => { if (typeof p === "object" && p[lang]) { any = true; return p[lang]; } return pick(p); }).join("");
+  return any ? s : null;
+}
+function hasTr(parts) { return flat(parts).some((p) => typeof p === "object" && p.kk); }
+
 function scrollDown() { requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; }); }
 function bubble(who, html, kind) {
   const row = mk("div", "msg " + who);
@@ -847,38 +1089,83 @@ function bubble(who, html, kind) {
   return b;
 }
 function me(text) { bubble("me", esc(text)); }
-function sys(html) { bubble("sys", html); }
 async function typing(ms) {
   const row = mk("div", "msg tutor", '<div class="bubble typing"><i></i><i></i><i></i></div>');
   chat.append(row); scrollDown();
   await sleep(reduced ? 120 : (ms || 520));
   row.remove();
 }
-async function tutor(text, opt = {}) {
+function addTrButton(b, parts) {
+  const btn = mk("button", "trbtn", esc(TR_LABEL[S.prefs.lang]));
+  btn.type = "button";
+  btn.onclick = () => {
+    const box = b.querySelector(":scope > .trbox");
+    if (box) { box.remove(); return; }
+    const lang = S.prefs.lang, s = trText(parts, lang);
+    const el = mk("div", "trbox", `<span class="lang">${LANGNAME[lang]}</span>${s ? fmtTr(s) : glossaryHelp(enText(parts), lang)}`);
+    btn.after(el); scrollDown();
+  };
+  b.append(btn);
+}
+async function tutor(parts, opt = {}) {
   await typing(opt.wait);
-  let html = (opt.raw ? text : fmt(text));
+  let html = fmt(enText(parts));
   if (opt.card) html += termCard(opt.card);
   if (opt.svg) html += `<figure class="fig">${SVG[opt.svg]}</figure>`;
   if (opt.src) html += `<cite>Source: ${esc(opt.src)}</cite>`;
   const b = bubble("tutor", html, opt.kind);
+  const trParts = opt.card ? [parts, "\n\n", termTr(opt.card)] : parts;
+  if (hasTr(trParts)) { addTrButton(b, trParts); LAST = trParts; }
   if (opt.kind === "soc" && !opt.nocount) S.soc++;
   if (opt.kind === "dir" && !opt.nocount) S.dir++;
   renderBalance(); save();
   return b;
 }
-function choices(b, labels, extra = [], struck = new Set()) {
+/* the term definition as a t() object, used to revise a term after a wrong answer */
+function termTr(key) { const x = TERMS[key]; return t(`**${x.en}**: ${x.def.m}`, `**${x.en}** (${x.kk.w}): ${x.kk.d}`, `**${x.en}** (${x.ru.w}): ${x.ru.d}`, `**${x.en}**: ${x.def.s}`); }
+function glossaryHelp(en, lang) {
+  const low = en.toLowerCase();
+  const found = Object.keys(TERMS).filter((k) => low.includes(k));
+  if (!found.length) return fmtTr(P.nothingToTr[lang]);
+  return fmtTr(P.partialTr[lang]) + "<br>" + found.map((k) => `<strong>${esc(TERMS[k].en)}</strong> = ${esc(TERMS[k][lang].w)}`).join("<br>");
+}
+async function translateLast(lang) {
+  if (!LAST) { await tutor(P.nothingToTr, { wait: 250 }); return; }
+  const s = trText(LAST, lang);
+  await typing(250);
+  bubble("tutor", `<span class="tag tag-ask">${esc(TR_HEAD[lang])}</span><br>` + (s ? fmtTr(s) : glossaryHelp(enText(LAST), lang)));
+}
+function trRequest(n) {
+  if (/(қазақша|казахск|kazakh|аудар|түсінбедім|түсінбеймін|түсінбей|түсініксіз)/.test(n)) return "kk";
+  if (/(по-?русски|на русском|russian|переведи|перевед|перевод|не понимаю|непонятно|не понял)/.test(n)) return "ru";
+  if (/(translat|don'?t understand|dont understand|didn'?t understand|in my language)/.test(n)) return S.prefs.lang;
+  return null;
+}
+
+function choices(b, labels, extra = [], struck = new Set(), allowText = false) {
   return new Promise((res) => {
     const box = mk("div", "choices");
     const all = [];
     labels.forEach((l, i) => {
-      const btn = mk("button", "choice" + (struck.has(i) ? " struck" : ""), fmt(l));
+      const trl = typeof l === "object" && l[S.prefs.lang] ? l[S.prefs.lang] : null;
+      const btn = mk("button", "choice" + (struck.has(i) ? " struck" : ""), fmt(pick(l)) + (trl && S.prefs.level === "s" ? ` <span class="trn">· ${esc(trl)}</span>` : ""));
       btn.type = "button"; btn.disabled = struck.has(i);
-      btn.onclick = () => done(btn, i, l); box.append(btn); all.push(btn);
+      if (typeof l === "object" && l[S.prefs.lang]) btn.title = l[S.prefs.lang];
+      btn.onclick = () => done(btn, i, pick(l)); box.append(btn); all.push(btn);
     });
     extra.forEach((e) => { const btn = mk("button", "choice ghost", esc(e.l)); btn.type = "button"; btn.onclick = () => done(btn, e.v, e.l); box.append(btn); all.push(btn); });
     function done(btn, v, l) { all.forEach((x) => (x.disabled = true)); btn.classList.add("picked"); inputWaiter = null; me(l.replace(/\*|\[\[|\]\]/g, "")); res(v); }
-    b.append(box); scrollDown();
+    if (allowText) inputWaiter = (txt) => { all.forEach((x) => (x.disabled = true)); inputWaiter = null; res({ text: txt }); };
+    const tr = b.querySelector(":scope > .trbtn");
+    tr ? b.insertBefore(box, tr) : b.append(box);
+    scrollDown();
   });
+}
+/* show option translations under a question when the student asks for a translation (Starter shows them always) */
+function optionTr(options) {
+  const list = (options || []).map((o) => o.l).filter((l) => typeof l === "object" && l.kk);
+  if (!list.length) return [];
+  return [t("", "\n", "\n"), ...list.map((l) => t("", `• ${l.m} = ${l.kk}\n`, `• ${l.m} = ${l.ru}\n`))];
 }
 /* waits for typed text OR an extra button */
 function awaitAnswer(b, extra) {
@@ -888,38 +1175,39 @@ function awaitAnswer(b, extra) {
     function off() { btns.forEach((x) => (x.disabled = true)); inputWaiter = null; setMode(); }
     inputWaiter = (txt) => { off(); res({ kind: "text", text: txt }); };
     setMode("answer");
-    b.append(box); scrollDown(); $("#askInput").focus({ preventScroll: true });
+    const tr = b.querySelector(":scope > .trbtn");
+    tr ? b.insertBefore(box, tr) : b.append(box);
+    scrollDown(); $("#askInput").focus({ preventScroll: true });
   });
 }
 function setMode(m) {
   const input = $("#askInput"), mode = $("#composerMode");
-  if (m === "answer") { input.placeholder = "Type your answer…"; mode.textContent = "Answer in your own words. Short answers are fine."; }
-  else { input.placeholder = "Ask a question, e.g. “What is an orbit?”"; mode.textContent = "Ask me about the terms in our lessons. I answer only from our Reader."; }
+  const trWord = S && S.prefs ? (S.prefs.lang === "kk" ? "“аудар”" : "“переведи”") : "“translate”";
+  if (m === "answer") { input.placeholder = "Type your answer…"; mode.textContent = `Type your answer. Short answers are fine! Stuck? Ask for a hint, or type ${trWord} to translate.`; }
+  else { input.placeholder = "Ask a question, e.g. “What is an orbit?”"; mode.textContent = `Ask me about our words. Type ${trWord} to see my last message in your language.`; }
 }
-function toast(t) { const e = mk("div", "toast", esc(t)); document.body.append(e); setTimeout(() => e.remove(), 1400); }
-function award(n) {
-  if (!n) return;
-  S.xp += n; toast("+" + n + " XP"); renderHeader(); save();
-}
+function toast(msg) { const e = mk("div", "toast", esc(msg)); document.body.append(e); setTimeout(() => e.remove(), 1400); }
+function award(n) { if (!n) return; S.xp += n; toast("+" + n + " XP"); renderHeader(); save(); }
 function bumpCombo(ok) {
   COMBO = ok ? COMBO + 1 : 0;
   const p = $("#comboPill");
   p.hidden = COMBO < 2; p.textContent = "Combo ×" + COMBO;
   return ok && COMBO >= 3 ? 2 : 0;
 }
+function praise() { return P.praise[Math.floor(Math.random() * P.praise.length)]; }
 function sayAloud(word) {
   try { const u = new SpeechSynthesisUtterance(word); u.lang = "en-US"; u.rate = .85; speechSynthesis.cancel(); speechSynthesis.speak(u); }
   catch (e) { toast("Sound is not available here"); }
 }
 
 function termCard(key) {
-  const t = TERMS[key], tr = t[S.prefs.lang];
+  const x = TERMS[key], tr = x[S.prefs.lang];
   if (!S.seen.includes(key)) { S.seen.push(key); save(); }
   return `<div class="tcard">
-    <div class="tc-head"><span class="tc-word">${esc(t.en)}</span><span class="tc-pos">${esc(t.pos)}</span><button type="button" class="say" data-say="${esc(t.en)}">Hear it</button></div>
-    <p class="tc-def">${esc(pick(t.def))}</p>
-    ${t.forms ? `<p class="tc-forms">Word family: ${esc(t.forms)}</p>` : ""}
-    <blockquote>“${esc(t.ex)}”<cite>${esc(t.src)}</cite></blockquote>
+    <div class="tc-head"><span class="tc-word">${esc(x.en)}</span><span class="tc-pos">${esc(x.pos)}</span><button type="button" class="say" data-say="${esc(x.en)}">Hear it</button></div>
+    <p class="tc-def">${esc(pick(x.def))}</p>
+    ${x.forms ? `<p class="tc-forms">Word family: ${esc(x.forms)}</p>` : ""}
+    <blockquote>“${esc(x.ex)}”<cite>${esc(x.src)}</cite></blockquote>
     <div class="tc-tr"><span class="lang">${LANGNAME[S.prefs.lang]}</span><strong>${esc(tr.w)}</strong><span>${esc(tr.d)}</span></div>
   </div>`;
 }
@@ -933,7 +1221,7 @@ async function runLesson(L) {
   try {
     for (const st of L.steps) {
       if (st.t === "dir") { await tutor(st.text, { kind: st.nocount ? null : "dir", svg: st.svg }); g(); await sleep(reduced ? 0 : 350); }
-      else if (st.t === "term") { await tutor(`Key term: **${TERMS[st.term].en}**`, { kind: "dir", card: st.term, svg: st.svg }); g(); await sleep(reduced ? 0 : 500); }
+      else if (st.t === "term") { await tutor([P.keyTerm, " **" + TERMS[st.term].en + "**"], { kind: "dir", card: st.term, svg: st.svg }); g(); await sleep(reduced ? 0 : 500); }
       else if (st.t === "soc") { await socStep(st, g); }
       else if (st.t === "game") { await gameStep(st, g); }
       else if (st.t === "explore") { await exploreStep(L, st, g); }
@@ -943,75 +1231,105 @@ async function runLesson(L) {
   } catch (e) { if (e !== ABORT) throw e; }
 }
 
+/* Socratic step: ask → on a wrong answer say it's incorrect, revise the term and ask again → then hints → then show the answer. */
 async function socStep(st, g) {
   const lvl = S.prefs.level;
   const maxH = Math.min(st.hints.length, LEVELS[lvl].hints);
   let useText = !!st.open && lvl !== "s";
-  let b = await tutor(st.q, { kind: "soc", svg: st.svg }); g();
-  let tries = 0, hints = 0;
+  const qParts = () => [st.q, optionTr(st.options)];
+  let b = await tutor(qParts(), { kind: "soc", svg: st.svg }); g();
+  let tries = 0, hints = 0, revised = false;
   const struck = new Set();
-  const reveal = async (pre) => { await tutor((pre ? pre + " " : "") + "Let's look at it together: " + pick(st.after)); g(); award(2); };
+  const revision = st.re || (st.term ? termTr(st.term) : null);
   while (true) {
     let r;
     if (useText) r = await awaitAnswer(b, [ { l: "Hint, please", v: "hint" }, { l: "Show me choices", v: "choices" } ]);
-    else { const i = await choices(b, st.options.map((o) => o.l), [ { l: "Hint, please", v: "hint" } ], struck); r = i === "hint" ? { kind: "hint" } : { kind: "opt", i }; }
+    else {
+      const i = await choices(b, st.options.map((o) => o.l), [ { l: "Hint, please", v: "hint" } ], struck, true);
+      r = i === "hint" ? { kind: "hint" } : (typeof i === "object" ? { kind: "text", text: i.text } : { kind: "opt", i });
+    }
     g();
-    if (r.kind === "choices") { useText = false; b = await tutor("Here are some choices. Pick the best one:"); g(); continue; }
+    if (r.kind === "choices") { useText = false; b = await tutor([P.choicesNow, optionTr(st.options)]); g(); continue; }
     if (r.kind === "text" && /don.?t know|no idea|not sure|idk|не знаю|білмеймін|help/.test(norm(r.text))) r = { kind: "hint" };
     if (r.kind === "hint") {
-      if (hints < maxH) { b = await tutor("Hint: " + st.hints[hints], { kind: "soc", nocount: true }); hints++; g(); }
-      else { await reveal("No problem."); break; }
+      if (hints < maxH) { b = await tutor([P.hint, " ", st.hints[hints]], { kind: "soc", nocount: true }); hints++; g(); }
+      else { await tutor([P.reveal, " ", st.after]); award(2); g(); break; }
       continue;
     }
     let ok, fb;
-    if (r.kind === "text") ok = st.accept.some((rx) => rx.test(norm(r.text)));
+    if (r.kind === "text") {
+      const n = norm(r.text);
+      if (st.accept) ok = st.accept.some((rx) => rx.test(n));
+      else {
+        // a typed answer to a choice question: find the option the student meant
+        const k = st.options.findIndex((o) => { const lab = norm(pick(o.l)).trim(); return lab.length > 1 && (n.includes(" " + lab + " ") || (lab.includes(n.trim()) && n.trim().length > 2)); });
+        if (k >= 0) { ok = !!st.options[k].ok; fb = st.options[k].fb; if (!ok) struck.add(k); }
+        else ok = false;
+      }
+      // a real question in the middle of a task: answer it from the book, then come back
+      const e = !ok && isQuestion(r.text, n) ? matchKB(n) : null;
+      if (e) {
+        await tutor(e.a, { kind: "dir", src: e.src }); g();
+        b = await tutor([BACK, "\n", st.q], { kind: "soc", nocount: true, svg: st.svg }); g();
+        continue;
+      }
+    }
     else { const o = st.options[r.i]; ok = !!o.ok; fb = o.fb; if (!ok) struck.add(r.i); }
     if (ok) {
       const bonus = bumpCombo(true);
       award((tries === 0 && hints === 0 ? 10 : 5) + bonus);
-      await tutor(PRAISE[Math.floor(Math.random() * PRAISE.length)] + " " + pick(st.after)); g();
+      await tutor([praise(), " ", st.after]); g();
       break;
     }
     bumpCombo(false); tries++;
-    if (hints < maxH) {
-      b = await tutor((fb ? fb + " " : "Not quite. ") + "Hint: " + st.hints[hints], { kind: "soc", nocount: true }); hints++; g();
-      if (useText && lvl === "m" && tries >= 2) { useText = false; b = await tutor("Let's try with choices:"); g(); }
+    if (!revised && revision) {
+      // 1st wrong answer: say it is incorrect, revise the term, ask the question again
+      revised = true;
+      b = await tutor([P.wrong, fb ? [" ", fb] : [], "\n\n", P.revise, " ", revision, "\n\n", P.again, "\n", st.q], { kind: "soc", nocount: true, svg: st.svg }); g();
+    } else if (hints < maxH) {
+      b = await tutor([P.wrong, fb ? [" ", fb] : [], "\n\n", P.hint, " ", st.hints[hints]], { kind: "soc", nocount: true }); hints++; g();
     } else {
-      await reveal(fb || "Good try."); break;
+      await tutor([P.stillWrong, fb ? [" ", fb] : [], "\n\n", P.reveal, " ", st.after]); award(2); g(); break;
     }
+    if (useText && lvl === "m" && tries >= 2) { useText = false; b = await tutor([P.choicesNow, optionTr(st.options)]); g(); }
   }
 }
 
 async function gameStep(st, g) {
   if (st.game === "sort") {
-    const b = await tutor(`**${st.cfg.title}**. ${st.cfg.intro}`, { kind: "game" }); g();
+    const b = await tutor([`🎮 **${st.cfg.title}** `, st.cfg.intro], { kind: "game" }); g();
     await sortGame(b, st.cfg); g();
   } else if (st.game === "eclipse") {
-    const b = await tutor("**Eclipse Builder**. Tap the objects to put them in a line, left to right. Can you build both kinds of eclipse?", { kind: "game" }); g();
+    const b = await tutor(t("🛠️ **Eclipse Builder**. Tap the objects to put them in a line, from left to right. Can you build both eclipses?",
+      "🛠️ **Eclipse Builder** (Тұтылу құрастырушы). Денелерді басып, оларды солдан оңға қарай бір қатарға қой. Екі тұтылуды да құрастыра аласың ба?",
+      "🛠️ **Eclipse Builder** (Конструктор затмений). Нажимай на объекты, чтобы поставить их в линию слева направо. Сможешь собрать оба затмения?"), { kind: "game" }); g();
     await eclipseGame(b); g();
   }
 }
 
 async function exploreStep(L, st, g) {
   const list = L.terms.map((k) => "**" + TERMS[k].en + "**").join(" and ");
-  const b = await tutor(`Your turn to explore! Ask me anything about ${list}. I answer only from our Reader, so you get facts you can trust. Tap a question or type your own:`, { kind: "ask" }); g();
+  const b = await tutor(exploreText(list), { kind: "ask" }); g();
   await new Promise((res) => {
     const box = mk("div", "choices");
     st.suggestions.forEach((q) => { const btn = mk("button", "choice", esc(q)); btn.type = "button"; btn.onclick = () => { if (!busy) { btn.disabled = true; send(q); } }; box.append(btn); });
     const go = mk("button", "choice ghost", "I'm ready for the quick check →"); go.type = "button";
     go.onclick = () => { go.disabled = true; box.querySelectorAll("button").forEach((x) => (x.disabled = true)); QA.pending = null; me("I'm ready for the quick check"); res(); };
-    box.append(go); b.append(box); scrollDown();
+    box.append(go);
+    const tr = b.querySelector(":scope > .trbtn");
+    tr ? b.insertBefore(box, tr) : b.append(box);
+    scrollDown();
   });
 }
 
 async function exitStep(L, st, g) {
-  await tutor(`Quick check: ${st.qs.length} questions. One try each. Every correct answer earns a star.`, { kind: "check" }); g();
+  await tutor(P.quickCheck, { kind: "check" }); g();
   let right = 0;
   for (const [n, q] of st.qs.entries()) {
     const b = await tutor(`**${n + 1}.** ${q.q}`, { kind: "check" }); g();
     const i = await choices(b, q.o); g();
-    if (i === q.a) { right++; award(10 + bumpCombo(true)); await tutor("Correct! " + q.why, { wait: 300 }); }
-    else { bumpCombo(false); await tutor(`Not this time. The answer is **${q.o[q.a]}**. ${q.why}`, { wait: 300 }); }
+    if (i === q.a) { right++; award(10 + bumpCombo(true)); await tutor([praise(), " ", q.why], { wait: 300 }); }
+    else { bumpCombo(false); await tutor([P.wrong, " ", P.right, ` **${q.o[q.a]}**. ${q.why}`], { wait: 300 }); }
     g();
   }
   const prev = S.lessons[L.id] || {};
@@ -1021,8 +1339,8 @@ async function exitStep(L, st, g) {
   if (newBadge) S.badges.push(L.badge.id);
   save(); renderAll();
   const starTxt = "★".repeat(stars) + "☆".repeat(3 - stars);
-  const b = await tutor(`Lesson complete! **${starTxt}** (${right}/${st.qs.length}).\nYou learned: ${L.terms.map((k) => `[[${k}]]`).join(", ")}. They are saved in your glossary.`, { kind: "check" }); g();
-  if (newBadge) await celebrate(L.badge, `You earned the **${L.badge.name}** badge for Lesson ${L.id.slice(1)}!`);
+  const b = await tutor([P.done, ` **${starTxt}** (${right}/${st.qs.length})\n`, P.learned, " " + L.terms.map((k) => `[[${k}]]`).join(", ") + ". ", P.saved], { kind: "check" }); g();
+  if (newBadge) await celebrate(L.badge, `You earned the **${L.badge.name}** badge for Lesson ${L.id.slice(1)}! 🏅`);
   g();
   const next = nextItem();
   const opts = [];
@@ -1041,7 +1359,9 @@ function sortGame(b, cfg) {
       <div class="g-progress"><b></b></div><div class="g-card" aria-live="polite"></div>
       <div class="g-bins">${cfg.bins.map((x) => `<button type="button" class="g-bin" data-b="${esc(x)}">${esc(x)}</button>`).join("")}</div>
       <p class="g-why"></p>`;
-    b.append(box); scrollDown();
+    const tr = b.querySelector(":scope > .trbtn");
+    tr ? b.insertBefore(box, tr) : b.append(box);
+    scrollDown();
     let i = 0, score = 0, xp = 0;
     const card = box.querySelector(".g-card"), why = box.querySelector(".g-why");
     const bins = [...box.querySelectorAll(".g-bin")];
@@ -1055,15 +1375,15 @@ function sortGame(b, cfg) {
     bins.forEach((btn) => btn.onclick = async () => {
       bins.forEach((x) => (x.disabled = true));
       const it = items[i], ok = btn.dataset.b === it.b;
-      if (ok) { score++; const bonus = bumpCombo(true); xp += 5 + bonus; card.classList.add("good"); why.textContent = "Correct! " + it.why + (bonus ? " Combo bonus +2!" : ""); }
-      else { bumpCombo(false); card.classList.add("bad"); why.textContent = `It's “${it.b}”. ${it.why}`; }
-      await sleep(reduced ? 600 : (ok ? 1100 : 2200));
+      if (ok) { score++; const bonus = bumpCombo(true); xp += 5 + bonus; card.classList.add("good"); why.textContent = "Yes! 🎉 " + it.why + (bonus ? " Combo bonus +2! ⚡" : ""); }
+      else { bumpCombo(false); card.classList.add("bad"); why.textContent = `That's not correct. 🙂 It's “${it.b}”. ${it.why}`; }
+      await sleep(reduced ? 600 : (ok ? 1100 : 2400));
       i++;
       if (i < items.length) show();
       else {
         box.querySelector(".g-progress b").style.width = "100%";
         card.className = "g-card good"; card.textContent = `${score} / ${items.length} correct`;
-        why.textContent = score === items.length ? "Perfect round!" : "Nice work! Wrong answers are how we learn.";
+        why.textContent = score === items.length ? "Perfect round! 🏆" : "Nice work! 👏 Mistakes help us learn.";
         box.querySelector(".g-score").textContent = `Score ${score}`;
         award(xp); res(score);
       }
@@ -1075,8 +1395,8 @@ function sortGame(b, cfg) {
 function eclipseGame(b) {
   return new Promise((res) => {
     const rounds = [
-      { goal: "solar", ask: "Round 1: build a **solar eclipse**, so people on Earth can't see the sun." },
-      { goal: "lunar", ask: "Round 2: build a **lunar eclipse**, so Earth's shadow covers the moon." }
+      { goal: "solar", ask: "Round 1: build a **solar eclipse**, so people on Earth can't see the sun. ☀️" },
+      { goal: "lunar", ask: "Round 2: build a **lunar eclipse**, so Earth's shadow covers the moon. 🌒" }
     ];
     let r = 0, tries = 0, total = 0;
     const box = mk("div", "game");
@@ -1085,39 +1405,41 @@ function eclipseGame(b) {
       <div class="tokens"><button type="button" class="token sun" data-o="sun">Sun</button><button type="button" class="token moon" data-o="moon">Moon</button><button type="button" class="token earth" data-o="earth">Earth</button></div>
       <div style="display:flex;gap:8px;justify-content:center"><button type="button" class="btn g-check">Check my line</button><button type="button" class="btn secondary g-reset">Clear</button></div>
       <p class="g-why"></p><div class="g-fig"></div>`;
-    b.append(box); scrollDown();
+    const tr = b.querySelector(":scope > .trbtn");
+    tr ? b.insertBefore(box, tr) : b.append(box);
+    scrollDown();
     const slots = [null, null, null];
     const why = box.querySelector(".g-why"), fig = box.querySelector(".g-fig");
     const slotEls = [...box.querySelectorAll(".slot")], tokEls = [...box.querySelectorAll(".token")];
     const NAMES = { sun: "Sun", moon: "Moon", earth: "Earth" };
     function paint() {
       slotEls.forEach((el, i) => { el.classList.toggle("filled", !!slots[i]); el.innerHTML = slots[i] ? `<span class="token ${slots[i]}" style="pointer-events:none">${NAMES[slots[i]]}</span>` : `<span class="pos">${["left", "middle", "right"][i]}</span>`; });
-      tokEls.forEach((t) => (t.disabled = slots.includes(t.dataset.o)));
+      tokEls.forEach((x) => (x.disabled = slots.includes(x.dataset.o)));
     }
     function setRound() { box.querySelector(".g-ask").innerHTML = fmt(rounds[r].ask); slots.fill(null); tries = 0; why.textContent = ""; fig.innerHTML = ""; paint(); }
-    tokEls.forEach((t) => t.onclick = () => { const k = slots.indexOf(null); if (k >= 0) { slots[k] = t.dataset.o; paint(); } });
+    tokEls.forEach((x) => x.onclick = () => { const k = slots.indexOf(null); if (k >= 0) { slots[k] = x.dataset.o; paint(); } });
     slotEls.forEach((el, i) => el.onclick = () => { slots[i] = null; paint(); });
     box.querySelector(".g-reset").onclick = () => { slots.fill(null); paint(); why.textContent = ""; };
     box.querySelector(".g-check").onclick = async () => {
-      if (slots.includes(null)) { why.textContent = "Place all three objects first."; return; }
+      if (slots.includes(null)) { why.textContent = "Put all three objects in the line first. 🙂"; return; }
       const goal = rounds[r].goal, mid = slots[1], ends = [slots[0], slots[2]];
       const ok = goal === "solar" ? mid === "moon" : mid === "earth";
       if (ok) {
         const xp = (tries === 0 ? 15 : 8) + bumpCombo(true); total += xp; award(xp);
-        why.textContent = goal === "solar" ? "Correct! The moon is in the middle and blocks the sun from Earth." : "Correct! Earth is in the middle, and its shadow falls on the moon.";
+        why.textContent = goal === "solar" ? "Yes! 🎉 The moon is in the middle. It blocks the sun from Earth." : "Yes! 🎉 Earth is in the middle. Its shadow falls on the moon.";
         const flip = ends[0] !== "sun";
         fig.innerHTML = `<figure class="fig"${flip ? ' style="transform:scaleX(-1)"' : ""}>${SVG[goal]}</figure>`;
-        if (flip) fig.querySelectorAll("text").forEach((t) => t.setAttribute("transform", `scale(-1,1) translate(${-2 * t.getAttribute("x")},0)`));
+        if (flip) fig.querySelectorAll("text").forEach((x) => x.setAttribute("transform", `scale(-1,1) translate(${-2 * x.getAttribute("x")},0)`));
         scrollDown();
         await sleep(reduced ? 800 : 2200);
         r++;
         if (r < rounds.length) setRound();
-        else { box.querySelectorAll("button").forEach((x) => (x.disabled = true)); why.textContent = "You built both eclipses! Solar: Sun – Moon – Earth. Lunar: Sun – Earth – Moon."; res(total); }
+        else { box.querySelectorAll("button").forEach((x) => (x.disabled = true)); why.textContent = "You built both eclipses! 🏆 Solar: Sun – Moon – Earth. Lunar: Sun – Earth – Moon."; res(total); }
       } else {
         tries++; bumpCombo(false);
-        if (mid === "sun") why.textContent = "The sun gives the light, so it can't be the blocker in the middle. Try again!";
-        else if (goal === "solar") why.textContent = "With Earth in the middle, Earth's shadow falls on the moon. That's the other kind! For a solar eclipse, which object blocks the sun?";
-        else why.textContent = "With the moon in the middle, the moon blocks the sun. That's a solar eclipse! For a lunar eclipse, whose shadow covers the moon?";
+        if (mid === "sun") why.textContent = "That's not correct. 🙂 The sun gives the light, so it can't block it from the middle. Try again!";
+        else if (goal === "solar") why.textContent = "That's not correct. 🙂 With Earth in the middle, Earth's shadow falls on the moon. That's the other kind! For a solar eclipse, what blocks the sun?";
+        else why.textContent = "That's not correct. 🙂 With the moon in the middle, the moon blocks the sun. That's a solar eclipse! For a lunar eclipse, whose shadow covers the moon?";
       }
     };
     setRound();
@@ -1126,8 +1448,8 @@ function eclipseGame(b) {
 
 async function runFinal() {
   const tok = ++RUN; inputWaiter = null; QA.pending = null; closeRail(); renderLessons("F");
-  chat.append(mk("div", "lesson-head", `<div class="label">Final challenge</div><h2>Term Match</h2><p>Match each English term to its ${LANGNAME[S.prefs.lang]} translation</p>`));
-  const b = await tutor("Flip two cards at a time. Find each **English term** and its **translation**. Fewer moves = more XP!", { kind: "game" });
+  chat.append(mk("div", "lesson-head", `<div class="label">Final challenge</div><h2>Term Match</h2><p>Match each English word to its ${LANGNAME[S.prefs.lang]} translation</p>`));
+  const b = await tutor(t("🃏 Flip two cards at a time. Find each **English word** and its **translation**. Fewer moves = more XP!", "🃏 Бір уақытта екі картаны аш. Әр **ағылшын сөзін** және оның **аудармасын** тап. Қадам аз болса, XP көп!", "🃏 Открывай по две карточки. Найди каждое **английское слово** и его **перевод**. Меньше ходов = больше XP!"), { kind: "game" });
   if (tok !== RUN) return;
   const keys = [ "orbit", "axis", "eclipse", "naked eye", "probe", "rotate" ];
   const cards = shuffle(keys.flatMap((k) => [ { k, t: TERMS[k].en }, { k, t: TERMS[k][S.prefs.lang].w } ]));
@@ -1150,7 +1472,9 @@ async function runFinal() {
     };
     grid.append(el);
   });
-  b.append(box); scrollDown();
+  const tr = b.querySelector(":scope > .trbtn");
+  tr ? b.insertBefore(box, tr) : b.append(box);
+  scrollDown();
   async function finish() {
     const xp = Math.max(10, 50 - (moves - keys.length) * 3); award(xp);
     const prev = S.lessons.F || {};
@@ -1158,8 +1482,8 @@ async function runFinal() {
     S.lessons.F = { done: true, stars: Math.max(prev.stars || 0, stars) };
     const isNew = !S.badges.includes("master"); if (isNew) S.badges.push("master");
     save(); renderAll();
-    await tutor(`All pairs found in **${moves} moves**! ${"★".repeat(stars)}${"☆".repeat(3 - stars)}`, { kind: "check" });
-    if (isNew) await celebrate(FINAL.badge, "You finished the whole demo course. You are a **Term Master**! Bring your glossary to class.");
+    await tutor(`All pairs found in **${moves} moves**! 🎉 ${"★".repeat(stars)}${"☆".repeat(3 - stars)}`, { kind: "check" });
+    if (isNew) await celebrate(FINAL.badge, "You finished the whole demo course. You are a **Term Master**! 🏆 Bring your glossary to class.");
   }
 }
 
@@ -1167,7 +1491,7 @@ async function runFinal() {
 function hit(n, toks, stem) {
   if (stem.startsWith("=")) return toks.includes(stem.slice(1));
   if (stem.includes(" ")) return n.includes(stem);
-  return toks.some((t) => t.startsWith(stem));
+  return toks.some((x) => x.startsWith(stem));
 }
 function matchKB(n) {
   const toks = tokens(n);
@@ -1184,13 +1508,14 @@ function findTerm(n) {
   const toks = tokens(n);
   const keys = Object.keys(TERMS).sort((a, b) => b.length - a.length);
   for (const k of keys) {
-    const t = TERMS[k];
-    const forms = [ k, t.kk.w.toLowerCase(), t.ru.w.toLowerCase() ];
-    if (forms.some((f) => f.includes(" ") ? n.includes(f) : toks.some((x) => x.startsWith(f.slice(0, Math.max(5, f.length - 1)))))) return k;
+    const x = TERMS[k];
+    const forms = [ k, x.kk.w.toLowerCase(), x.ru.w.toLowerCase() ];
+    if (forms.some((f) => f.includes(" ") ? n.includes(f) : toks.some((w) => w.startsWith(f.slice(0, Math.max(5, f.length - 1)))))) return k;
   }
   return null;
 }
-function balance() { const t = S.soc + S.dir; return t ? S.soc / t : 0; }
+function isQuestion(raw, n) { return /\?\s*$/.test(raw.trim()) || /^ (what|why|how|when|where|who|which|is|are|do|does|did|can|could|tell|explain|что|почему|как|когда|где|кто|какой|какая|зачем|расскажи|объясни|не|неге|қалай|қашан|қайда|кім|қандай|қай)\b/.test(n); }
+function balance() { const x = S.soc + S.dir; return x ? S.soc / x : 0; }
 let busy = false;
 async function qa(text) {
   busy = true;
@@ -1199,29 +1524,31 @@ async function qa(text) {
 async function qaInner(text) {
   const n = norm(text);
   if (QA.pending && await qaPending(text, n)) return;
-  if (/^ (hi|hello|hey|salem|сәлем|салем|привет|здравствуй)[\s!,.]/.test(n)) {
-    await tutor("Hi! Ask me about **orbit**, **axis**, **eclipse**, **naked eye** or **probe**, or pick a lesson from the course map."); return;
-  }
-  if (/thank|рахмет|спасибо/.test(n)) { await tutor("You're welcome! Keep asking questions. That's how scientists learn too."); return; }
+  if (/^ (hi|hello|hey|salem|сәлем|салем|привет|здравствуй)[\s!,.]/.test(n)) { await tutor(P.hello); return; }
+  if (/thank|рахмет|спасибо/.test(n)) { await tutor(P.thanks); return; }
   const term = findTerm(n);
   if (term && /(translat|russian|kazakh|перевод|по-русски|по русски|на русском|қазақша|аудар|in kazakh|in russian|what is .* in)/.test(n)) {
-    const t = TERMS[term];
-    await tutor(`**${t.en}**\nҚазақша: **${t.kk.w}**: ${t.kk.d}\nРусский: **${t.ru.w}**: ${t.ru.d}`, { kind: "dir", src: "Senim glossary" });
+    const x = TERMS[term];
+    await tutor(`**${x.en}**\nҚазақша: **${x.kk.w}**: ${x.kk.d}\nРусский: **${x.ru.w}**: ${x.ru.d}`, { kind: "dir", src: "Senim glossary" });
     if (!S.seen.includes(term)) { S.seen.push(term); save(); }
     return;
   }
   const e = matchKB(n);
   if (!e) {
-    if (term) { await tutor(`Here is the glossary card for **${TERMS[term].en}**:`, { kind: "dir", card: term }); return; }
-    await tutor("Hmm, I can't find that in our book. I only answer from *What's in Our Universe?*, Chapters 1–3 (the sun and Earth, the moon, and the planets closest to the sun), so I never guess. Please bring this question to class! You could ask me things like “What is an orbit?”, “Why do we have eclipses?” or “What is a probe?”");
+    if (term) { await tutor([P.keyTerm, " **" + TERMS[term].en + "**"], { kind: "dir", card: term }); return; }
+    await tutor(P.outOfBook);
     return;
   }
+  // A statement, not a question (e.g. "the moon makes its own light"): check it against the book.
+  if (!isQuestion(text, n)) { await tutor([P.checkBook, "\n", e.a], { kind: "dir", src: e.src }); return; }
   if (e.soc && balance() < 0.5) {
     QA.pending = { e, tries: 0, hinted: false };
     const b = await tutor(e.soc.q, { kind: "soc" });
     const box = mk("div", "choices");
     [ "Hint, please", "Just tell me" ].forEach((l) => { const btn = mk("button", "choice ghost", l); btn.type = "button"; btn.onclick = () => { box.querySelectorAll("button").forEach((x) => (x.disabled = true)); send(l); }; box.append(btn); });
-    b.append(box); scrollDown();
+    const tr = b.querySelector(":scope > .trbtn");
+    tr ? b.insertBefore(box, tr) : b.append(box);
+    scrollDown();
     return;
   }
   await tutor(e.a, { kind: "dir", src: e.src });
@@ -1229,22 +1556,30 @@ async function qaInner(text) {
 async function qaPending(raw, n) {
   const p = QA.pending, s = p.e.soc;
   if (/hint|подсказ|кеңес/.test(n)) {
-    if (!p.hinted) { p.hinted = true; await tutor("Hint: " + s.hint, { kind: "soc", nocount: true }); return true; }
-    QA.pending = null; await tutor("Here is what the book says: " + p.e.a, { src: p.e.src }); return true;
+    if (!p.hinted) { p.hinted = true; await tutor([P.hint, " ", s.hint], { kind: "soc", nocount: true }); return true; }
+    QA.pending = null; await tutor([P.bookSays, "\n", p.e.a], { src: p.e.src }); return true;
   }
   if (/just tell|tell me|don.?t know|dont know|no idea|idk|не знаю|скажи|білмеймін|айтшы|show me/.test(n)) {
-    QA.pending = null; await tutor("No problem. Here is what the book says: " + p.e.a, { src: p.e.src }); return true;
+    QA.pending = null; await tutor([P.reveal, "\n", p.e.a], { src: p.e.src }); return true;
   }
-  if (/\?\s*$/.test(raw.trim())) { const e2 = matchKB(n); if (e2 && e2 !== p.e) { QA.pending = null; return false; } }
+  if (isQuestion(raw, n)) { const e2 = matchKB(n); if (e2 && e2 !== p.e) { QA.pending = null; return false; } }
   const ok = s.all ? s.acc.every((rx) => rx.test(n)) : s.acc.some((rx) => rx.test(n));
-  if (ok) { QA.pending = null; award(5 + bumpCombo(true)); await tutor(PRAISE[Math.floor(Math.random() * PRAISE.length)] + " " + p.e.a, { src: p.e.src }); return true; }
+  if (ok) { QA.pending = null; award(5 + bumpCombo(true)); await tutor([praise(), "\n", p.e.a], { src: p.e.src }); return true; }
   bumpCombo(false); p.tries++;
-  if (!p.hinted) { p.hinted = true; await tutor("Not quite yet. Hint: " + s.hint, { kind: "soc", nocount: true }); return true; }
-  QA.pending = null; await tutor("Good effort! Here is what the book says: " + p.e.a, { src: p.e.src }); return true;
+  if (p.tries === 1) {
+    // say it is incorrect, give a hint and ask the question again
+    p.hinted = true;
+    await tutor([P.wrong, "\n\n", P.hint, " ", s.hint, "\n\n", P.again, " ", s.q], { kind: "soc", nocount: true });
+    return true;
+  }
+  QA.pending = null; await tutor([P.stillWrong, " ", P.bookSays, "\n", p.e.a], { src: p.e.src }); return true;
 }
 
 function send(text) {
   text = String(text).trim(); if (!text) return;
+  const n = norm(text);
+  const trLang = trRequest(n);
+  if (trLang && !findTerm(n)) { me(text); translateLast(trLang); return; }
   if (inputWaiter) { me(text); const w = inputWaiter; inputWaiter = null; setMode(); w(text); return; }
   me(text); qa(text);
 }
@@ -1402,9 +1737,14 @@ async function enterApp(first) {
   show("app"); renderAll(); chat.innerHTML = ""; setMode();
   const name = ROSTER[LOGIN].name;
   const next = nextItem();
+  const lang = LANGNAME[S.prefs.lang];
   const b = await tutor(first
-    ? `Hi ${name}! I'm **Senim**, your space-terms tutor. Our demo course has **3 short lessons** from the Reader *What's in Our Universe?* Each lesson teaches 1–2 key terms, then you play a game and take a quick check.\nSometimes I'll answer your question with a question, to help you think it through. If you're stuck, ask for a **hint** or say **“just tell me”**. Your glossary is in **${LANGNAME[S.prefs.lang]}**.`
-    : `Welcome back, ${name}! You have **${S.xp} XP**. ${next ? "Ready to continue?" : "You finished the course! Replay any lesson to earn more stars, or ask me questions."}`);
+    ? t(`Hi ${name}! 👋 I'm **Senim**, your space words helper. 🚀 We have **3 short lessons** from our Reader *What's in Our Universe?* In each lesson you learn 1–2 new words, play a game and do a quick check.\nSometimes I'll answer with a question to help you think. 🤔 Stuck? Ask for a **hint** or say **“just tell me”**. Want my words in ${lang}? Type **“translate”**, or tap **${TR_LABEL[S.prefs.lang]}** under my message.`,
+        `Сәлем, ${name}! 👋 Мен — **Senim**, ғарыш сөздерін үйренуге көмекшің. 🚀 Бізде *What's in Our Universe?* кітабынан **3 қысқа сабақ** бар. Әр сабақта 1–2 жаңа сөз үйреніп, ойын ойнап, жылдам тексеруден өтесің.\nКейде ойлануыңа көмектесу үшін сұраққа сұрақпен жауап беремін. 🤔 Қиналсаң, **hint** (кеңес) сұра немесе **“just tell me”** деп жаз. Хабарымды қазақша оқығың келсе, **“аудар”** деп жаз немесе хабардың астындағы **Аудару** батырмасын бас.`,
+        `Привет, ${name}! 👋 Я — **Senim**, твой помощник по космическим словам. 🚀 У нас **3 коротких урока** из книги *What's in Our Universe?* На каждом уроке ты выучишь 1–2 новых слова, поиграешь в игру и пройдёшь быструю проверку.\nИногда я отвечаю вопросом, чтобы помочь тебе подумать. 🤔 Трудно? Попроси **hint** (подсказку) или напиши **“just tell me”**. Хочешь прочитать мои сообщения по-русски? Напиши **“переведи”** или нажми **Перевести** под сообщением.`)
+    : t(`Welcome back, ${name}! 👋 You have **${S.xp} XP**. ${next ? "Ready to keep going? 🚀" : "You finished the course! 🏆 Play any lesson again for more stars, or ask me questions."}`,
+        `Қайта оралуыңмен, ${name}! 👋 Сенде **${S.xp} XP** бар. ${next ? "Жалғастырамыз ба? 🚀" : "Сен курсты аяқтадың! 🏆 Көбірек жұлдыз алу үшін кез келген сабақты қайта өт немесе маған сұрақ қой."}`,
+        `С возвращением, ${name}! 👋 У тебя **${S.xp} XP**. ${next ? "Продолжим? 🚀" : "Ты прошёл(ла) курс! 🏆 Пройди любой урок ещё раз, чтобы получить больше звёзд, или задай мне вопрос."}`));
   const opts = [];
   if (next) opts.push({ l: next === FINAL ? "Play the Final: Term Match" : `Start Lesson ${next.id.slice(1)}: ${next.title}`, v: "go" });
   opts.push({ l: "Open my glossary", v: "gloss" });

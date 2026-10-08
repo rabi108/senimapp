@@ -43,6 +43,15 @@ guided questions → the game → free questions → a 3-question check (stars) 
   Chapters 1–3 (in `KB` inside `index.html`), and every answer cites its page. Anything outside the book gets "I can't
   find that in our book, please bring it to class" instead of a guess. Students can ask in English, and some Russian
   and Kazakh keywords also work (e.g. "затмение", "тұтылу"). "What is axis in Russian?" returns the translation.
+- **Translation on request.** Every tutor message has a translate button (Аудару / Перевести). Students can also type
+  "translate", "аудар", "переведи", "I don't understand", "түсінбедім" or "не понимаю" to get the last message in
+  their language, or in Kazakh or Russian if they name it. All lesson text, hints, feedback and book answers are written
+  in English, Kazakh and Russian (`t(english, kazakh, russian)` in the code). Game clues and quick-check questions stay
+  in English on purpose, because they are English practice.
+- **Wrong answers.** When an answer is wrong, the tutor says it is not correct and that the book says something
+  different. Then it explains the term again and repeats the question. Further wrong answers get hints, and finally the
+  answer. If a student types a statement instead of a question (e.g. "the moon makes its own light"), the tutor checks
+  it against the book.
 - **Level adaptation.** Starter: simpler definitions, translations next to every term, up to 3 hints, answer choices
   every time. Middle: translations on tap, 2 hints, some typed answers. Advanced: book definitions, 1 hint, typed
   answers. Students can change the language and level in the menu.
