@@ -1,0 +1,7 @@
+name = "senim-tutor-server"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Secrets are NOT set here. Set OPENAI_API_KEY with:  npx wrangler secret put OPENAI_API_KEY
+# For local development, copy .dev.vars.example to .dev.vars (git-ignored).
