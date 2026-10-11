@@ -1635,7 +1635,7 @@ async function runSelftest() {
   try { const res = await fetch("api/admin/selftest", { method: "POST", headers: { authorization: "Bearer " + ACCOUNT.token } }); r = await res.json(); } catch (e) { r = { error: "Can't reach the server." }; }
   if (!r.results) { await tutor("Self-test failed: " + (r.error || "unknown error")); return; }
   const checks = (r.checks || []).map((c) => `${c.ok ? "✅" : "❌"} ${c.step}: ${c.detail}`);
-  const lines = r.results.map((x) => `${x.pass ? "✅" : "❌"} ${x.question} → ${x.got}${x.reason && !x.pass ? " [" + x.reason + "]" : ""}${x.sources && x.sources.length ? " (" + x.sources.join("; ") + ")" : ""}${x.topScore != null ? " · match " + x.topScore : ""}`);
+  const lines = r.results.map((x) => `${x.pass ? "✅" : "❌"} ${x.question} → ${x.got}${x.reason && !x.pass ? " [" + x.reason + "]" : ""}${x.sources && x.sources.length ? " (" + x.sources.join("; ") + ")" : ""}${x.topScore != null ? " · match " + x.topScore : ""}${x.searchedAs ? " · searched as “" + x.searchedAs + "”" : ""}`);
   const stopped = r.checks && r.checks.some((c) => !c.ok) ? "\n**A setup check failed, so the questions were not run.** The ❌ line above says why." : "";
   await tutor(`**Setup checks**\n${checks.join("\n")}${stopped}\n\n**Self-test: ${r.passed}/${r.total} passed.** Spent this month: $${r.spentThisMonthUSD.toFixed(4)}.\n` + lines.join("\n"));
 }
