@@ -33,6 +33,14 @@ function config(env) {
   };
 }
 
+/** Short, safe description of an error: HTTP status, OpenAI error code and message, with anything key-like masked. */
+function errInfo(err) {
+  if (!err) return "unknown error";
+  const code = err.code || (err.error && err.error.code) || "";
+  const text = [err.status, code, err.message].filter(Boolean).join(" ");
+  return text.replace(/sk-[A-Za-z0-9_*\-]{4,}/g, "sk-…").replace(/cfat_[A-Za-z0-9_\-]+/g, "cfat_…").slice(0, 300);
+}
+
 const json = (data, status = 200) => Response.json(data, { status, headers: { "cache-control": "no-store" } });
 const ledger = (env) => env.LEDGER.get(env.LEDGER.idFromName("main"));
 
@@ -169,7 +177,7 @@ async function handleAsk(request, env, user) {
     return json({ ...pub, remainingToday: Math.max(0, cfg.dailyLimit - r.used) });
   } catch (err) {
     await ledger(env).release(user.sub, day);
-    console.error("ask failed", err && err.status, err && err.message);
+    console.error("ask failed:", errInfo(err));
     return json({ status: "unavailable" }, 502);
   }
 }
@@ -179,6 +187,25 @@ async function handleSelftest(env) {
   if (!cfg.mock && !env.OPENAI_API_KEY) return json({ error: "OPENAI_API_KEY is not set." }, 503);
   const { month } = dayAndMonth(cfg.timeZone);
   if ((await ledger(env).status(month, "")).spentMicro >= cfg.budgetMicro) return json({ error: "Monthly budget reached." }, 429);
+  // Step-by-step checks, so a failure points at the part that is broken.
+  const checks = [];
+  const step = async (name, fn) => {
+    try { const detail = await fn(); checks.push({ step: name, ok: true, detail: detail || "" }); return true; }
+    catch (err) { console.error("selftest check failed:", name, errInfo(err)); checks.push({ step: name, ok: false, detail: errInfo(err) }); return false; }
+  };
+  await step("OpenAI key is set", async () => { if (!cfg.mock && !env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY secret is missing"); return cfg.mock ? "mock mode" : "yes"; });
+  await step("Counter database", async () => { await ledger(env).status(month, ""); return "ok"; });
+  const embedOk = await step(`Embeddings (${cfg.embedModel})`, async () => { const r = await embed(env, cfg, ["orbit"]); return `${r.vectors[0].length} dimensions`; });
+  const chatOk = await step(`Answer model (${cfg.chatModel})`, async () => {
+    const r = await generate(env, cfg, buildPrompt("What is an orbit?", [{ id: "T1", cite: "test", text: "orbit: the curved path something in space takes around another object." }], "ru"), []);
+    const v = typeof r.raw === "string" ? JSON.parse(r.raw) : r.raw;
+    return `ok (supported=${v.supported})`;
+  });
+  const indexOk = embedOk && await step("Search index of approved materials", async () => `${(await getIndex(env, cfg)).length} excerpts`);
+  if (!embedOk || !chatOk || !indexOk) {
+    const s = await ledger(env).status(month, "");
+    return json({ passed: 0, total: SELFTEST.length, spentThisMonthUSD: s.spentMicro / 1e6, checks, results: [] });
+  }
   const results = [];
   for (const t of SELFTEST) {
     try {
@@ -186,11 +213,12 @@ async function handleSelftest(env) {
       const pass = t.expect === "answer" ? r.status === "answered" && (!t.cites || r.sources.some((s) => t.cites.some((c) => s.includes(c)))) : r.status === "declined";
       results.push({ question: t.q, expected: t.expect, got: r.status, reason: r.reason || null, sources: r.sources || [], topScore: r.topScore == null ? null : Math.round(r.topScore * 1000) / 1000, answer: r.answer || "", pass });
     } catch (err) {
-      results.push({ question: t.q, expected: t.expect, got: "error", reason: String(err && err.message).slice(0, 120), pass: false });
+      console.error("selftest question failed:", errInfo(err));
+      results.push({ question: t.q, expected: t.expect, got: "error", reason: errInfo(err), pass: false });
     }
   }
   const status = await ledger(env).status(month, dayAndMonth(cfg.timeZone).day);
-  return json({ passed: results.filter((r) => r.pass).length, total: results.length, spentThisMonthUSD: status.spentMicro / 1e6, results });
+  return json({ passed: results.filter((r) => r.pass).length, total: results.length, spentThisMonthUSD: status.spentMicro / 1e6, checks, results });
 }
 
 export default {
@@ -227,7 +255,7 @@ export default {
       if (request.method === "POST" && path === "/api/admin/selftest") return await handleSelftest(env);
       return json({ error: "Not found" }, 404);
     } catch (err) {
-      console.error("request failed", path, err && err.message);
+      console.error("request failed:", path, errInfo(err));
       return json({ error: "Server error" }, 500);
     }
   }

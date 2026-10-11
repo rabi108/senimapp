@@ -20,6 +20,10 @@ class_name = "Ledger"
 tag = "v1"
 new_sqlite_classes = ["Ledger"]
 
+# Request logs (errors only contain status codes and masked messages; no question text).
+[observability]
+enabled = true
+
 # Limits and settings. Change them here and redeploy (npm run deploy).
 [vars]
 CHAT_MODEL = "gpt-5.4-nano"
