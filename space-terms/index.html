@@ -1772,7 +1772,7 @@ async function runVoiceSelftest() {
   let r;
   try { const res = await fetch("api/admin/voice-selftest", { method: "POST", headers: { authorization: "Bearer " + ACCOUNT.token } }); r = await res.json(); } catch (e) { r = { error: "Can't reach the server." }; }
   if (!r.results) { await tutor("Voice self-test failed: " + (r.error || "unknown error")); return; }
-  const lines = r.results.map((x) => `${x.pass ? "✅" : "❌"} [${x.lang}] said “${x.said}” → heard “${x.heard}” (${x.accuracy}% words) → ${x.got}${x.reason ? " [" + x.reason + "]" : ""}${x.sources && x.sources.length ? " (" + x.sources.join("; ") + ")" : ""}`);
+  const lines = r.results.map((x) => `${x.pass ? "✅" : "❌"} [${x.lang}] said “${x.said}” → heard “${x.heard}” (${x.accuracy}% words) → ${x.got}${x.reason && !x.pass ? " [" + x.reason + "]" : ""}${x.searchedAs ? " · searched as “" + x.searchedAs + "”" : ""}${x.sources && x.sources.length ? " (" + x.sources.join("; ") + ")" : ""}`);
   await tutor(`**Voice self-test: ${r.passed}/${r.total} passed.** Spent this month: $${r.spentThisMonthUSD.toFixed(4)}.\nThe test voice is synthetic; please also try a few real recordings from students.\n` + lines.join("\n"));
 }
 $("#micBtn").onclick = () => startRecording();
