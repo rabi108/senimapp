@@ -41,8 +41,16 @@ https://senim-tutor-server.senim-tutor-server.workers.dev/
   accuracy and whether each answer was given or declined correctly. The test voice is synthetic, so also try real
   student recordings.
 
-Nothing about the conversation is stored. The server keeps only counters: questions per student per day,
-spending per month and failed sign-ins.
+## Student progress (teacher view)
+
+Each student's browser sends a small progress summary after every change: lessons finished, stars, XP, badges, the
+glossary words met, and the level and language settings. The teacher opens **Students' progress** in the menu to see
+a progress bar for each student on the roster, the stars per lesson, XP, words learned, today's AI and voice questions,
+and when the student was last active. The server checks and limits the values a browser sends. A student who signs in
+on another device gets their progress back.
+
+Nothing about the conversation is stored. Apart from the progress summary above, the server keeps only counters:
+questions per student per day, spending per month and failed sign-ins.
 
 ## Files
 
@@ -50,7 +58,7 @@ spending per month and failed sign-ins.
 |---|---|
 | `materials/` | The approved documents, and `approved.json`, which lists the ones the AI may use |
 | `src/chunks.json` | The approved documents split into cited excerpts (generated) |
-| `src/index.js` | Routes: `/api/health`, `/api/login`, `/api/ask`, `/api/transcribe`, `/api/tts`, `/api/admin/usage`, `/api/admin/selftest`, `/api/admin/voice-selftest` |
+| `src/index.js` | Routes: `/api/health`, `/api/login`, `/api/ask`, `/api/transcribe`, `/api/tts`, `/api/admin/usage`, `/api/admin/selftest`, `/api/admin/voice-selftest`, `/api/progress`, `/api/admin/progress` |
 | `src/rag.js` | Search, prompt and answer checks |
 | `src/auth.js` | Code hashing and session tokens |
 | `src/ledger.js` | Durable Object with the counters (SQLite) |

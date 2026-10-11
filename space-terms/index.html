@@ -273,6 +273,18 @@ aside.rail { border-right: 1px solid var(--line); background: var(--surface); ov
 .gl { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 4px; }
 .gl .w { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .gl .w b { font-family: var(--font-display); font-size: 16px; color: var(--accent); }
+.prsum { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; color: var(--ink-2); }
+.prsum b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.prlist { overflow-y: auto; display: grid; gap: 10px; padding-right: 4px; }
+.prrow { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 6px; }
+.prhead { display: flex; align-items: baseline; gap: 8px; }
+.prlogin { color: var(--ink-2); font-size: 13px; }
+.prpct { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+.prbar { height: 10px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
+.prbar b { display: block; height: 100%; background: var(--good); }
+.prmeta { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.prstep { border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; font-weight: 700; }
+.prstep.on { background: var(--good-soft); border-color: transparent; color: var(--good); }
 .gl .tr { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 14px; }
 .gl .tr span:nth-child(odd) { color: var(--ink-2); font-weight: 600; font-size: 12px; padding-top: 2px; }
 .gl.pref-kk .kk, .gl.pref-ru .ru { font-weight: 700; color: var(--soc); }
@@ -385,6 +397,7 @@ aside.rail { border-right: 1px solid var(--line); background: var(--surface); ov
         <button class="btn secondary" id="glossBtn">Open my glossary</button>
         <div id="teacherTools" class="settings" hidden>
           <div class="label">Teacher: AI tutor</div>
+          <button class="btn" id="progressBtn" type="button">Students' progress</button>
           <button class="btn secondary" id="usageBtn" type="button">Show AI spending</button>
           <button class="btn secondary" id="selftestBtn" type="button">Run AI self-test</button>
           <button class="btn secondary" id="voiceTestBtn" type="button">Run voice self-test</button>
@@ -1067,7 +1080,38 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
   del(k) { try { localStorage.removeItem(k); } catch (e) {} }
 };
-function save() { if (LOGIN) store.set("senim:" + LOGIN, S); }
+function save() { if (LOGIN) store.set("senim:" + LOGIN, S); queueProgressSync(); }
+
+/* Progress sync: a small summary (lessons, stars, XP, badges) goes to the server so the teacher can see it
+   and the student keeps it on another device. No answers or chat text are sent. */
+let SYNC_TIMER = null;
+function progressSummary() {
+  return { lessons: S.lessons, xp: S.xp, badges: S.badges, seen: S.seen || [], level: S.prefs && S.prefs.level, lang: S.prefs && S.prefs.lang };
+}
+function queueProgressSync() {
+  if (!(ONLINE && ACCOUNT && ACCOUNT.token && ACCOUNT.role === "student" && S)) return;
+  clearTimeout(SYNC_TIMER);
+  SYNC_TIMER = setTimeout(() => {
+    fetch("api/progress", { method: "POST", keepalive: true, headers: { "content-type": "application/json", authorization: "Bearer " + ACCOUNT.token }, body: JSON.stringify(progressSummary()) }).catch(() => {});
+  }, 2000);
+}
+/** Merges progress saved on the server (e.g. from another device) into this browser's copy. */
+async function restoreProgress() {
+  try {
+    const r = await fetch("api/progress", { headers: { authorization: "Bearer " + ACCOUNT.token } });
+    const p = r.ok ? (await r.json()).progress : null;
+    if (!p) return;
+    for (const [id, l] of Object.entries(p.lessons || {})) {
+      const mine = S.lessons[id] || {};
+      S.lessons[id] = { done: true, stars: Math.max(mine.stars || 0, l.stars || 0) };
+    }
+    S.xp = Math.max(S.xp || 0, p.xp || 0);
+    S.badges = [...new Set([...(S.badges || []), ...(p.badges || [])])];
+    S.seen = [...new Set([...(S.seen || []), ...(p.seen || []).filter((w) => TERMS[w])])];
+    if (!S.prefs && p.level && p.lang) S.prefs = { level: p.level, lang: p.lang };
+    store.set("senim:" + LOGIN, S);
+  } catch (e) { /* offline: keep this browser's copy */ }
+}
 function fresh() { return { prefs: null, xp: 0, lessons: {}, badges: [], soc: 0, dir: 0, seen: [] }; }
 
 /* ============================ HELPERS ============================ */
@@ -1888,10 +1932,12 @@ async function detectServer() {
     return !!(h && h.ok && h.signInReady);
   } catch (e) { return false; }
 }
-function startSession(login, account) {
+async function startSession(login, account) {
   LOGIN = login; ACCOUNT = account;
   store.set("senim:session", { login, ...account });
   S = store.get("senim:" + LOGIN) || fresh();
+  if (ONLINE && account.token && account.role === "student") await restoreProgress();
+  queueProgressSync();
   if (S.prefs) enterApp(); else startQuiz();
 }
 $("#openApp").onclick = async () => {
@@ -1998,6 +2044,48 @@ $("#glossBtn").onclick = () => { closeRail(); openGlossary(); };
 $("#langSeg").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; S.prefs.lang = b.dataset.v; save(); renderSettings(); toast("Glossary: " + LANGNAME[b.dataset.v]); };
 $("#levelSeg").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; S.prefs.level = b.dataset.v; save(); renderSettings(); toast("Level: " + LEVELS[b.dataset.v].name); };
 $("#usageBtn").onclick = () => { closeRail(); showUsage(); };
+$("#progressBtn").onclick = () => { closeRail(); openProgress(); };
+
+function ago(ms) {
+  if (!ms) return "never";
+  const m = Math.round((Date.now() - ms) / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return m + " min ago";
+  if (m < 48 * 60) return Math.round(m / 60) + " h ago";
+  return Math.round(m / 1440) + " days ago";
+}
+async function openProgress() {
+  const ov = $("#overlay");
+  ov.innerHTML = `<div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="prT">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 id="prT" style="font-size:20px">Students' progress</h2>
+      <span style="display:flex;gap:8px"><button class="btn secondary" type="button" id="prRefresh">Refresh</button><button class="btn secondary" type="button" id="prClose">Close</button></span></div>
+    <div class="prsum" id="prSum">Loading…</div>
+    <div class="prlist" id="prList"></div>
+    <p class="label" style="margin:0">Progress updates when a student finishes a lesson step. Lessons: 1 Orbit & Axis · 2 Eclipse · 3 Naked Eye & Probe · ★ Final.</p></div>`;
+  ov.hidden = false;
+  $("#prClose").onclick = () => { ov.hidden = true; ov.innerHTML = ""; };
+  $("#prRefresh").onclick = () => loadProgress();
+  $("#prClose").focus();
+  loadProgress();
+}
+async function loadProgress() {
+  const r = await api("api/admin/progress").catch(() => ({}));
+  if (!r.students) { $("#prSum").textContent = "Couldn't load progress. Please try again."; return; }
+  const st = r.students.slice().sort((a, b) => b.done - a.done || b.xp - a.xp || a.name.localeCompare(b.name));
+  const finished = st.filter((x) => x.done === x.total).length, started = st.filter((x) => x.lastActive).length;
+  const avg = st.length ? Math.round(st.reduce((s, x) => s + x.done / x.total, 0) / st.length * 100) : 0;
+  $("#prSum").innerHTML = `<span><b>${st.length}</b> students</span><span><b>${started}</b> started</span><span><b>${finished}</b> finished the course</span><span>class average <b>${avg}%</b></span>`;
+  const step = (x, id, label) => { const l = x.lessons[id]; return `<span class="prstep${l ? " on" : ""}" title="${l ? l.stars + " of 3 stars" : "not done yet"}">${label}${l ? " " + "★".repeat(l.stars) : ""}</span>`; };
+  $("#prList").innerHTML = st.map((x) => {
+    const pct = Math.round(x.done / x.total * 100);
+    return `<div class="prrow">
+      <div class="prhead"><b>${esc(x.name)}</b><span class="prlogin">${esc(x.login)}</span><span class="prpct">${pct}%</span></div>
+      <div class="prbar" role="progressbar" aria-label="${esc(x.name)} course progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><b style="width:${pct}%"></b></div>
+      <div class="prmeta">${step(x, "L1", "1")}${step(x, "L2", "2")}${step(x, "L3", "3")}${step(x, "F", "★")}
+        <span>${x.stars}/12 ★</span><span>${x.xp} XP</span><span>${x.termsSeen} words</span><span>today: ${x.today.ai} AI · ${x.today.voice} voice</span><span>last active: ${ago(x.lastActive)}</span></div>
+    </div>`;
+  }).join("") || "<p>No students yet. Add them with the roster tool.</p>";
+}
 $("#selftestBtn").onclick = () => { closeRail(); runSelftest(); };
 $("#voiceTestBtn").onclick = () => { closeRail(); runVoiceSelftest(); };
 $("#logoutBtn").onclick = () => { stopRecording(true); RUN++; inputWaiter = null; store.del("senim:session"); LOGIN = null; S = null; ACCOUNT = null; $("#loginCode").value = ""; closeRail(); show("home"); };

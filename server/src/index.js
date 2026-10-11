@@ -280,6 +280,55 @@ async function handleVoiceSelftest(env) {
   return json({ passed: results.filter((r) => r.pass).length, total: results.length, spentThisMonthUSD: s.spentMicro / 1e6, results });
 }
 
+// ---------- progress ----------
+
+const PROGRESS_ITEMS = ["L1", "L2", "L3", "F"];
+const BADGE_IDS = ["orbit", "eclipse", "mission", "master"];
+
+/** Keeps only the progress fields the teacher view needs, with safe types and ranges. */
+function cleanProgress(body) {
+  const lessons = {};
+  for (const id of PROGRESS_ITEMS) {
+    const l = body && body.lessons && body.lessons[id];
+    if (l && l.done) lessons[id] = { done: true, stars: Math.max(0, Math.min(3, Math.round(Number(l.stars) || 0))) };
+  }
+  const n = (v, max) => Math.max(0, Math.min(max, Math.round(Number(v) || 0)));
+  return {
+    lessons,
+    xp: n(body && body.xp, 100000),
+    badges: (Array.isArray(body && body.badges) ? body.badges : []).filter((b) => BADGE_IDS.includes(b)),
+    seen: (Array.isArray(body && body.seen) ? body.seen : []).filter((w) => typeof w === "string" && /^[a-z ]{2,20}$/.test(w)).slice(0, 40),
+    level: ["s", "m", "a"].includes(body && body.level) ? body.level : null,
+    lang: ["kk", "ru"].includes(body && body.lang) ? body.lang : null
+  };
+}
+
+async function handleProgressSave(request, env, user) {
+  const raw = await request.text();
+  if (raw.length > 4000) return json({ error: "Too large." }, 413);
+  let body; try { body = JSON.parse(raw); } catch { return json({ error: "Bad data." }, 400); }
+  await ledger(env).putProgress(user.sub, cleanProgress(body), Date.now());
+  return json({ ok: true });
+}
+
+async function handleProgressList(env) {
+  const cfg = config(env);
+  const { day } = dayAndMonth(cfg.timeZone);
+  const all = await ledger(env).allProgress(day);
+  const students = (roster(env).users || []).filter((u) => u.role !== "teacher").map((u) => {
+    const p = all[u.login] || {};
+    const done = PROGRESS_ITEMS.filter((id) => p.lessons && p.lessons[id]);
+    return {
+      login: u.login, name: u.name,
+      done: done.length, total: PROGRESS_ITEMS.length,
+      lessons: p.lessons || {}, stars: done.reduce((s, id) => s + p.lessons[id].stars, 0),
+      xp: p.xp || 0, badges: p.badges || [], termsSeen: (p.seen || []).length, level: p.level || null, lang: p.lang || null,
+      lastActive: p.updated || null, today: p.today || { ai: 0, voice: 0 }
+    };
+  });
+  return json({ students, dailyAiLimit: cfg.dailyLimit, dailyVoiceLimit: cfg.voice.dailyVoice });
+}
+
 // ---------- routes ----------
 
 async function handleLogin(request, env) {
@@ -378,6 +427,8 @@ export default {
       const user = await authed(request, env);
       if (!user) return json({ error: "Please sign in again." }, 401);
       if (request.method === "POST" && path === "/api/ask") return await handleAsk(request, env, user);
+      if (request.method === "POST" && path === "/api/progress") return await handleProgressSave(request, env, user);
+      if (request.method === "GET" && path === "/api/progress") return json({ progress: await ledger(env).getProgress(user.sub) });
       if (request.method === "POST" && path === "/api/transcribe") return await handleTranscribe(request, env, user);
       if (request.method === "POST" && path === "/api/tts") return await handleTts(request, env, user);
       if (request.method === "GET" && path === "/api/me") {
@@ -393,6 +444,7 @@ export default {
       }
       if (request.method === "POST" && path === "/api/admin/selftest") return await handleSelftest(env);
       if (request.method === "POST" && path === "/api/admin/voice-selftest") return await handleVoiceSelftest(env);
+      if (request.method === "GET" && path === "/api/admin/progress") return await handleProgressList(env);
       return json({ error: "Not found" }, 404);
     } catch (err) {
       console.error("request failed:", path, errInfo(err));

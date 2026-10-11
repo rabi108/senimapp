@@ -1,5 +1,6 @@
 // One Durable Object (SQLite storage) that keeps counters: questions per student per day,
 // spending per month, failed logins, and the cached embeddings index.
+// It also keeps each student's lesson progress (lessons done, stars, XP, badges) for the teacher's view.
 // It never stores question text, answers or audio.
 import { DurableObject } from "cloudflare:workers";
 
@@ -12,6 +13,7 @@ export class Ledger extends DurableObject {
       this.sql.exec("CREATE TABLE IF NOT EXISTS spend (month TEXT PRIMARY KEY, micro INTEGER)");
       this.sql.exec("CREATE TABLE IF NOT EXISTS fails (login TEXT PRIMARY KEY, n INTEGER, since INTEGER)");
       this.sql.exec("CREATE TABLE IF NOT EXISTS blobs (k TEXT PRIMARY KEY, v TEXT)");
+      this.sql.exec("CREATE TABLE IF NOT EXISTS progress (login TEXT PRIMARY KEY, data TEXT, updated INTEGER)");
     });
   }
 
@@ -77,6 +79,26 @@ export class Ledger extends DurableObject {
     else this.sql.exec("UPDATE fails SET n = n + 1 WHERE login = ?", login);
   }
   clearLoginFails(login) { this.sql.exec("DELETE FROM fails WHERE login = ?", login); }
+
+  putProgress(login, data, now) {
+    this.sql.exec("INSERT OR REPLACE INTO progress (login, data, updated) VALUES (?, ?, ?)", login, JSON.stringify(data), now);
+  }
+  getProgress(login) {
+    const row = this.sql.exec("SELECT data, updated FROM progress WHERE login = ?", login).toArray()[0];
+    return row ? { ...JSON.parse(row.data), updated: row.updated } : null;
+  }
+  /** Every student's progress plus today's AI and voice question counts. */
+  allProgress(day) {
+    const out = {};
+    for (const r of this.sql.exec("SELECT login, data, updated FROM progress").toArray()) out[r.login] = { ...JSON.parse(r.data), updated: r.updated };
+    for (const r of this.sql.exec("SELECT login, n FROM usage WHERE day = ?", day).toArray()) {
+      const [login, kind] = r.login.split(":");
+      out[login] = out[login] || {};
+      out[login].today = out[login].today || { ai: 0, voice: 0 };
+      if (!kind) out[login].today.ai = r.n; else if (kind === "voice") out[login].today.voice = r.n;
+    }
+    return out;
+  }
 
   getBlob(k) { const row = this.sql.exec("SELECT v FROM blobs WHERE k = ?", k).toArray()[0]; return row ? row.v : null; }
   putBlob(k, v) { this.sql.exec("DELETE FROM blobs WHERE k LIKE 'index:%' AND k != ?", k); this.sql.exec("INSERT OR REPLACE INTO blobs (k, v) VALUES (?, ?)", k, v); }
