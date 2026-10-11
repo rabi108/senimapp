@@ -1,3 +1,5 @@
-# Copy this file to .dev.vars for local development (.dev.vars is git-ignored).
-# Never commit a real key.
-OPENAI_API_KEY=replace-with-your-new-key
+# Copy this file to .dev.vars for local development (.dev.vars is git-ignored). Never commit real values.
+OPENAI_API_KEY=replace-with-your-key
+SESSION_SECRET=replace-with-a-long-random-string
+# ROSTER_JSON is created by: npm run roster
+# MOCK_OPENAI=1 runs everything without calling OpenAI (for tests); use with MIN_SIMILARITY=0.1

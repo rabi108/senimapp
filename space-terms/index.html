@@ -156,6 +156,7 @@ aside.rail { border-right: 1px solid var(--line); background: var(--surface); ov
 .tag-dir { background: var(--sky-soft); color: var(--sky); }
 .tag-game { background: var(--accent-soft); color: var(--accent); }
 .tag-check { background: var(--good-soft); color: var(--good); }
+.tag-ai { background: var(--sky-soft); color: var(--sky); }
 .tag-ask { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
 .bubble p { margin: 0 0 8px; }
 .bubble p:last-child { margin: 0; }
@@ -314,8 +315,9 @@ aside.rail { border-right: 1px solid var(--line); background: var(--surface); ov
     </div>
     <p class="err" id="loginErr" role="alert"></p>
     <button class="btn" type="submit">Sign in</button>
-    <div class="demo">
-      <div class="label" style="margin-bottom:4px">Demo accounts</div>
+    <p class="demo" id="onlineNote" hidden>Use the login and code on the card from your teacher.</p>
+    <div class="demo" id="demoBox">
+      <div class="label" style="margin-bottom:4px">Demo accounts (offline demo only)</div>
       <table>
         <tr><td><code>aruzhan.7a</code></td><td><code>4821</code></td><td>student</td></tr>
         <tr><td><code>daniyar.7b</code></td><td><code>1937</code></td><td>student</td></tr>
@@ -368,6 +370,11 @@ aside.rail { border-right: 1px solid var(--line); background: var(--surface); ov
         <div class="label">English level</div>
         <div class="seg" id="levelSeg"><button data-v="s">Starter</button><button data-v="m">Middle</button><button data-v="a">Advanced</button></div>
         <button class="btn secondary" id="glossBtn">Open my glossary</button>
+        <div id="teacherTools" class="settings" hidden>
+          <div class="label">Teacher: AI tutor</div>
+          <button class="btn secondary" id="usageBtn" type="button">Show AI spending</button>
+          <button class="btn secondary" id="selftestBtn" type="button">Run AI self-test</button>
+        </div>
         <button class="linkish" id="logoutBtn">Sign out</button>
       </div>
     </aside>
@@ -1008,6 +1015,7 @@ function badgeSVG(id) {
 }
 
 /* ============================ STATE ============================ */
+/* Offline demo logins: used only when the page runs without the server (e.g. opened as a file). */
 const ROSTER = {
   "aruzhan.7a": { code: "4821", name: "Aruzhan" },
   "daniyar.7b": { code: "1937", name: "Daniyar" },
@@ -1019,6 +1027,8 @@ const RANKS = [ [0, "Space Cadet"], [60, "Star Explorer"], [150, "Orbit Navigato
 
 let S = null;          // per-student saved state
 let LOGIN = null;
+let ACCOUNT = null;    // { name, role, unlockAll, token, exp }
+let ONLINE = false;    // true when the Senim server (AI tutor) is reachable
 let RUN = 0;           // lesson run token (aborts an old lesson when a new one starts)
 let COMBO = 0;
 let inputWaiter = null;
@@ -1065,7 +1075,7 @@ function fmt(src) {
 
 /* ============================ CHAT PRIMITIVES ============================ */
 const chat = $("#chat");
-const TAGS = { soc: "Think it through", dir: "Explanation", game: "Game", check: "Quick check", ask: "Your questions" };
+const TAGS = { soc: "Think it through", dir: "Explanation", game: "Game", check: "Quick check", ask: "Your questions", ai: "AI answer · from our book" };
 const TR_LABEL = { kk: "Аудару", ru: "Перевести" };
 const BACK = t("Now back to our question: 🙂", "Енді сұрағымызға оралайық: 🙂", "Теперь вернёмся к нашему вопросу: 🙂");
 const TR_HEAD = { kk: "Қазақша:", ru: "По-русски:" };
@@ -1117,7 +1127,7 @@ async function tutor(parts, opt = {}) {
   const trParts = opt.card ? [parts, "\n\n", termTr(opt.card)] : parts;
   if (hasTr(trParts)) { addTrButton(b, trParts); LAST = trParts; }
   if (opt.kind === "soc" && !opt.nocount) S.soc++;
-  if (opt.kind === "dir" && !opt.nocount) S.dir++;
+  if ((opt.kind === "dir" || opt.kind === "ai") && !opt.nocount) S.dir++;
   renderBalance(); save();
   return b;
 }
@@ -1136,8 +1146,9 @@ async function translateLast(lang) {
   bubble("tutor", `<span class="tag tag-ask">${esc(TR_HEAD[lang])}</span><br>` + (s ? fmtTr(s) : glossaryHelp(enText(LAST), lang)));
 }
 function trRequest(n) {
-  if (/(қазақша|казахск|kazakh|аудар|түсінбедім|түсінбеймін|түсінбей|түсініксіз)/.test(n)) return "kk";
-  if (/(по-?русски|на русском|russian|переведи|перевед|перевод|не понимаю|непонятно|не понял)/.test(n)) return "ru";
+  // Only explicit requests: a language name inside another word (e.g. "Kazakhstan") is not a request.
+  if (/(қазақша|аудар|түсінбе|түсініксіз|по-?казахски|на казахском|\b(in|to|into) kazakh\b|^ kazakh( please)? $)/.test(n)) return "kk";
+  if (/(по-?русски|на русском|переведи|перевед|перевод|не понимаю|непонятно|не понял|орысша|\b(in|to|into) russian\b|^ russian( please)? $)/.test(n)) return "ru";
   if (/(translat|don'?t understand|dont understand|didn'?t understand|in my language)/.test(n)) return S.prefs.lang;
   return null;
 }
@@ -1534,6 +1545,13 @@ async function qaInner(text) {
     return;
   }
   const e = matchKB(n);
+  if (ONLINE && ACCOUNT && ACCOUNT.token) {
+    // Free, offline guided questions keep the think-it-through / explanation balance;
+    // everything else goes to the AI tutor, which answers only from the approved materials.
+    const guided = e && e.soc && balance() < 0.5 && isQuestion(text, n);
+    const statement = e && !isQuestion(text, n);
+    if (!guided && !statement) { await askAI(text, e, term); return; }
+  }
   if (!e) {
     if (term) { await tutor([P.keyTerm, " **" + TERMS[term].en + "**"], { kind: "dir", card: term }); return; }
     await tutor(P.outOfBook);
@@ -1575,6 +1593,51 @@ async function qaPending(raw, n) {
   QA.pending = null; await tutor([P.stillWrong, " ", P.bookSays, "\n", p.e.a], { src: p.e.src }); return true;
 }
 
+/* ============================ AI TUTOR (server) ============================ */
+const AIP = {
+  limit: t("You've used today's AI questions. 🙂 I'll answer from our lesson notes until tomorrow.", "Бүгінгі AI сұрақтарың бітті. 🙂 Ертеңге дейін сабақ жазбаларымыздан жауап беремін.", "Вопросы к AI на сегодня закончились. 🙂 До завтра я отвечаю по нашим конспектам уроков."),
+  offline: t("The AI tutor is resting right now, so I'll answer from our lesson notes.", "AI көмекші қазір демалып жатыр, сондықтан сабақ жазбаларымыздан жауап беремін.", "AI-помощник сейчас отдыхает, поэтому я отвечу по нашим конспектам уроков."),
+  expired: t("Please sign in again to keep using the AI tutor.", "AI көмекшіні қолдану үшін қайта кір.", "Чтобы пользоваться AI-помощником, войди снова.")
+};
+async function api(path, body) {
+  const r = await fetch(path, { method: body === undefined ? "GET" : "POST", headers: { "content-type": "application/json", authorization: "Bearer " + ACCOUNT.token }, body: body === undefined ? undefined : JSON.stringify(body) });
+  const data = await r.json().catch(() => ({}));
+  if (r.status === 401) { store.del("senim:session"); ACCOUNT.token = null; data.status = "expired"; }
+  return data;
+}
+async function localAnswer(e, term) {
+  if (e) await tutor(e.a, { kind: "dir", src: e.src });
+  else if (term) await tutor([P.keyTerm, " **" + TERMS[term].en + "**"], { kind: "dir", card: term });
+  else await tutor(P.outOfBook);
+}
+async function askAI(text, e, term) {
+  await typing(300);
+  let r;
+  try { r = await api("api/ask", { question: text, lang: S.prefs.lang }); } catch (err) { r = { status: "unavailable" }; }
+  if (r.status === "answered") {
+    const tr = r.translation || "";
+    await tutor(t(r.answer, r.lang === "kk" ? tr : "", r.lang === "ru" ? tr : ""), { kind: "ai", src: (r.sources || []).join("; ") });
+    return;
+  }
+  if (r.status === "declined") { await tutor(P.outOfBook); return; }
+  if (r.status === "too-long") { await tutor(t("That question is a bit long. Can you ask it in one short sentence?", "Сұрақ сәл ұзын. Оны бір қысқа сөйлеммен қоя аласың ба?", "Вопрос немного длинный. Можешь задать его одним коротким предложением?")); return; }
+  await tutor(r.status === "limit" ? AIP.limit : r.status === "expired" ? AIP.expired : AIP.offline);
+  await localAnswer(e, term);
+}
+async function showUsage() {
+  const r = await api("api/admin/usage").catch(() => ({}));
+  if (r.spentUSD === undefined) { await tutor("I couldn't load the usage numbers. Please try again."); return; }
+  await tutor(`**AI spending this month (${r.month}):** $${r.spentUSD.toFixed(4)} of $${r.budgetUSD} budget.\nToday: ${r.today.questions} AI questions from ${r.today.students} students. Model: ${r.model}.`);
+}
+async function runSelftest() {
+  await tutor("Running the AI self-test: 12 questions, 7 that the book answers and 5 it doesn't. This costs about one cent and takes up to a minute…");
+  let r;
+  try { const res = await fetch("api/admin/selftest", { method: "POST", headers: { authorization: "Bearer " + ACCOUNT.token } }); r = await res.json(); } catch (e) { r = { error: "Can't reach the server." }; }
+  if (!r.results) { await tutor("Self-test failed: " + (r.error || "unknown error")); return; }
+  const lines = r.results.map((x) => `${x.pass ? "✅" : "❌"} ${x.question} → ${x.got}${x.sources && x.sources.length ? " (" + x.sources.join("; ") + ")" : ""}${x.topScore != null ? " · match " + x.topScore : ""}`);
+  await tutor(`**Self-test: ${r.passed}/${r.total} passed.** Spent this month: $${r.spentThisMonthUSD.toFixed(4)}.\n` + lines.join("\n"));
+}
+
 function send(text) {
   text = String(text).trim(); if (!text) return;
   const n = norm(text);
@@ -1594,7 +1657,7 @@ function renderHeader() {
   $("#rankBar").style.width = nx ? ((S.xp - r[0]) / (nx[0] - r[0]) * 100) + "%" : "100%";
 }
 function unlocked(idx) {
-  if (ROSTER[LOGIN] && ROSTER[LOGIN].unlockAll) return true;
+  if (ACCOUNT && ACCOUNT.unlockAll) return true;
   if (idx === 0) return true;
   if (idx === LESSONS.length) return LESSONS.every((l) => S.lessons[l.id] && S.lessons[l.id].done);
   return !!(S.lessons[LESSONS[idx - 1].id] && S.lessons[LESSONS[idx - 1].id].done);
@@ -1630,7 +1693,7 @@ function renderSettings() {
   document.querySelectorAll("#langSeg button").forEach((b) => b.classList.toggle("on", b.dataset.v === S.prefs.lang));
   document.querySelectorAll("#levelSeg button").forEach((b) => b.classList.toggle("on", b.dataset.v === S.prefs.level));
 }
-function renderAll() { $("#meName").textContent = ROSTER[LOGIN].name; renderHeader(); renderLessons(); renderBadges(); renderBalance(); renderSettings(); }
+function renderAll() { $("#meName").textContent = ACCOUNT.name; $("#teacherTools").hidden = !(ONLINE && ACCOUNT.role === "teacher"); renderHeader(); renderLessons(); renderBadges(); renderBalance(); renderSettings(); }
 
 function nextItem() {
   for (let i = 0; i < LESSONS.length; i++) if (!(S.lessons[LESSONS[i].id] || {}).done) return unlocked(i) ? LESSONS[i] : null;
@@ -1673,21 +1736,50 @@ function closeRail() { $("#rail").classList.remove("open"); }
 /* ============================ SCREENS ============================ */
 function show(id) { [ "home", "login", "quiz", "app" ].forEach((s) => ($("#" + s).hidden = s !== id)); }
 
-$("#openApp").onclick = () => {
-  const last = store.get("senim:session");
-  if (last && ROSTER[last]) { LOGIN = last; S = store.get("senim:" + LOGIN) || fresh(); if (S.prefs) return enterApp(); return startQuiz(); }
-  show("login"); $("#loginName").focus();
-};
-$("#loginForm").onsubmit = (e) => {
-  e.preventDefault();
-  const name = $("#loginName").value.trim().toLowerCase(), code = $("#loginCode").value.trim();
-  const acc = ROSTER[name];
-  if (!name || !code) { $("#loginErr").textContent = "Enter your login and your sign-in code."; return; }
-  if (!acc || acc.code !== code) { $("#loginErr").textContent = "That login and code don't match. Check the card from your teacher and try again."; return; }
-  $("#loginErr").textContent = "";
-  LOGIN = name; store.set("senim:session", LOGIN);
+async function detectServer() {
+  if (!/^https?:$/.test(location.protocol)) return false;
+  try {
+    const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 4000);
+    const r = await fetch("api/health", { signal: ctl.signal, cache: "no-store" }); clearTimeout(timer);
+    const h = r.ok ? await r.json() : null;
+    return !!(h && h.ok && h.signInReady);
+  } catch (e) { return false; }
+}
+function startSession(login, account) {
+  LOGIN = login; ACCOUNT = account;
+  store.set("senim:session", { login, ...account });
   S = store.get("senim:" + LOGIN) || fresh();
   if (S.prefs) enterApp(); else startQuiz();
+}
+$("#openApp").onclick = async () => {
+  ONLINE = await detectServer();
+  $("#demoBox").hidden = ONLINE;
+  $("#onlineNote").hidden = !ONLINE;
+  let last = store.get("senim:session");
+  if (typeof last === "string") last = { login: last };          // saved by an older version
+  if (last && last.login) {
+    if (ONLINE && last.token && last.exp * 1000 > Date.now() + 60000) return startSession(last.login, { name: last.name, role: last.role, unlockAll: last.role === "teacher", token: last.token, exp: last.exp });
+    if (!ONLINE && ROSTER[last.login]) return startSession(last.login, { name: ROSTER[last.login].name, role: ROSTER[last.login].unlockAll ? "teacher" : "student", unlockAll: !!ROSTER[last.login].unlockAll });
+  }
+  show("login"); $("#loginName").focus();
+};
+$("#loginForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const name = $("#loginName").value.trim().toLowerCase(), code = $("#loginCode").value.trim();
+  if (!name || !code) { $("#loginErr").textContent = "Enter your login and your sign-in code."; return; }
+  if (ONLINE) {
+    $("#loginErr").textContent = "Signing in…";
+    let r, data = {};
+    try { r = await fetch("api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ login: name, code }) }); data = await r.json(); }
+    catch (err) { $("#loginErr").textContent = "Can't reach the Senim server. Check your internet connection and try again."; return; }
+    if (!r.ok) { $("#loginErr").textContent = data.error || "That login and code don't match. Check the card from your teacher and try again."; return; }
+    $("#loginErr").textContent = ""; $("#loginCode").value = "";
+    return startSession(name, { name: data.name, role: data.role, unlockAll: data.role === "teacher", token: data.token, exp: data.exp });
+  }
+  const acc = ROSTER[name];
+  if (!acc || acc.code !== code) { $("#loginErr").textContent = "That login and code don't match. Check the card from your teacher and try again."; return; }
+  $("#loginErr").textContent = "";
+  startSession(name, { name: acc.name, role: acc.unlockAll ? "teacher" : "student", unlockAll: !!acc.unlockAll });
 };
 
 /* ---------- setup quiz ---------- */
@@ -1722,7 +1814,7 @@ function startQuiz() {
                    m: "Standard English, translations on tap, 2 hints, and you type some answers yourself.",
                    a: "Full book definitions, translations on tap, 1 hint, and more typed answers." }[level];
     panel.innerHTML = `<div class="dots">${Q.map(() => '<i class="on"></i>').join("")}<i class="on"></i></div>
-      <div><div class="label">Your learning plan</div><h1 style="font-size:22px;margin-top:6px">Ready, ${esc(ROSTER[LOGIN].name)}!</h1></div>
+      <div><div class="label">Your learning plan</div><h1 style="font-size:22px;margin-top:6px">Ready, ${esc(ACCOUNT.name)}!</h1></div>
       <div class="summary"><div><span>Glossary</span><strong>${LANGNAME[ans.lang]}</strong></div><div><span>English level</span><strong>${LEVELS[level].name}</strong></div></div>
       <p style="margin:0;color:var(--ink-2)">${what} You can change both any time in the menu.</p>
       <button class="btn" type="button" id="goApp">Start learning</button>`;
@@ -1735,7 +1827,7 @@ function startQuiz() {
 /* ---------- app ---------- */
 async function enterApp(first) {
   show("app"); renderAll(); chat.innerHTML = ""; setMode();
-  const name = ROSTER[LOGIN].name;
+  const name = ACCOUNT.name;
   const next = nextItem();
   const lang = LANGNAME[S.prefs.lang];
   const b = await tutor(first
@@ -1762,7 +1854,9 @@ $("#menuBtn").onclick = () => $("#rail").classList.toggle("open");
 $("#glossBtn").onclick = () => { closeRail(); openGlossary(); };
 $("#langSeg").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; S.prefs.lang = b.dataset.v; save(); renderSettings(); toast("Glossary: " + LANGNAME[b.dataset.v]); };
 $("#levelSeg").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; S.prefs.level = b.dataset.v; save(); renderSettings(); toast("Level: " + LEVELS[b.dataset.v].name); };
-$("#logoutBtn").onclick = () => { RUN++; inputWaiter = null; store.del("senim:session"); LOGIN = null; S = null; $("#loginCode").value = ""; closeRail(); show("home"); };
+$("#usageBtn").onclick = () => { closeRail(); showUsage(); };
+$("#selftestBtn").onclick = () => { closeRail(); runSelftest(); };
+$("#logoutBtn").onclick = () => { RUN++; inputWaiter = null; store.del("senim:session"); LOGIN = null; S = null; ACCOUNT = null; $("#loginCode").value = ""; closeRail(); show("home"); };
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#overlay").hidden && $("#glClose")) $("#glClose").click(); });
 </script>
 </body>

@@ -3,5 +3,44 @@ main = "src/index.js"
 compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Secrets are NOT set here. Set OPENAI_API_KEY with:  npx wrangler secret put OPENAI_API_KEY
+# The tutor page (space-terms/index.html) is bundled into the Worker and served at "/",
+# so the browser talks to /api/... on the same site.
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = false
+
+# Counters (questions per student per day, monthly spending, failed logins) and the
+# cached embeddings index. No question text, answers or audio are stored.
+[[durable_objects.bindings]]
+name = "LEDGER"
+class_name = "Ledger"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Ledger"]
+
+# Limits and settings. Change them here and redeploy (npm run deploy).
+[vars]
+CHAT_MODEL = "gpt-5.4-nano"
+REASONING_EFFORT = "none"
+EMBED_MODEL = "text-embedding-3-small"
+EMBED_DIMENSIONS = "512"
+MAX_AI_QUESTIONS_PER_DAY = "20"   # per student; other questions are answered by the free offline tutor
+MAX_OUTPUT_TOKENS = "600"         # answer + translation
+MAX_QUESTION_CHARS = "400"
+MONTHLY_BUDGET_USD = "18"         # hard stop; the app falls back to the offline tutor after this
+TOP_K = "4"                       # excerpts sent to the model per question
+MIN_SIMILARITY = "0.25"           # below this, the question is declined without calling the model
+SCHOOL_TIME_ZONE = "Asia/Almaty"
+# USD per 1M tokens, used to track spending. Check https://openai.com/api/pricing and update.
+PRICE_INPUT_PER_M = "0.20"
+PRICE_CACHED_INPUT_PER_M = "0.02"
+PRICE_OUTPUT_PER_M = "1.25"
+PRICE_EMBED_PER_M = "0.02"
+
+# Secrets are NOT set here. Set them with `npx wrangler secret put NAME`:
+#   OPENAI_API_KEY  - your OpenAI key
+#   SESSION_SECRET  - random string used to sign sign-in sessions
+#   ROSTER_JSON     - logins with hashed codes, created by `npm run roster -- --upload`
 # For local development, copy .dev.vars.example to .dev.vars (git-ignored).
