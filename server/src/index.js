@@ -6,6 +6,7 @@ import { checkLogin, signToken, verifyToken } from "./auth.js";
 import { retrieve, buildPrompt, validateAnswer, costMicro, ANSWER_SCHEMA } from "./rag.js";
 import MATERIALS from "./chunks.json";
 import { SELFTEST } from "./selftest.js";
+import { STT_LANGS, STT_PROMPT, TTS_INSTRUCTIONS, ttsCostMicro, sttCostMicro, wordAccuracy, VOICE_SELFTEST } from "./voice.js";
 import TUTOR_PAGE from "../../space-terms/index.html";
 
 export { Ledger } from "./ledger.js";
@@ -29,6 +30,22 @@ function config(env) {
     minScore: num(env.MIN_SIMILARITY, 0.25),
     timeZone: env.SCHOOL_TIME_ZONE || "Asia/Almaty",
     prices: { in: num(env.PRICE_INPUT_PER_M, 0.2), cachedIn: num(env.PRICE_CACHED_INPUT_PER_M, 0.02), out: num(env.PRICE_OUTPUT_PER_M, 1.25), embed: num(env.PRICE_EMBED_PER_M, 0.02) },
+    voice: {
+      enabled: env.VOICE_ENABLED !== "false",
+      sttModel: env.STT_MODEL || "gpt-4o-mini-transcribe",
+      ttsModel: env.TTS_MODEL || "gpt-4o-mini-tts",
+      ttsVoice: env.TTS_VOICE || "coral",
+      maxSeconds: num(env.MAX_AUDIO_SECONDS, 15),
+      maxBytes: num(env.MAX_AUDIO_BYTES, 600000),
+      dailyVoice: num(env.MAX_VOICE_QUESTIONS_PER_DAY, 8),
+      dailyTts: num(env.MAX_TTS_PER_DAY, 3),
+      ttsMaxChars: num(env.TTS_MAX_CHARS, 600),
+      ttsBudgetMicro: Math.round(num(env.TTS_BUDGET_USD, 3) * 1e6),
+      prices: {
+        sttAudioIn: num(env.PRICE_STT_AUDIO_INPUT_PER_M, 1.25), sttTextIn: num(env.PRICE_STT_TEXT_INPUT_PER_M, 1.25), sttOut: num(env.PRICE_STT_OUTPUT_PER_M, 5),
+        sttPerMinFallback: num(env.PRICE_STT_PER_MIN, 0.003), ttsTextIn: num(env.PRICE_TTS_TEXT_INPUT_PER_M, 0.6), ttsPerMin: num(env.PRICE_TTS_PER_MIN, 0.015)
+      }
+    },
     mock: env.MOCK_OPENAI === "1"
   };
 }
@@ -169,6 +186,100 @@ async function answerQuestion(env, cfg, question, lang) {
   return { status: "answered", answer: v.answer, translation: v.translation, lang, sources: v.sources, topScore: hits[0].score, searchedAs: searchText };
 }
 
+// ---------- voice ----------
+
+/** Speech-to-text. The audio is passed straight through to OpenAI and never stored. */
+async function transcribe(env, cfg, file, lang, mockText) {
+  if (cfg.mock) return { text: mockText || "What is an orbit?", usage: null };
+  const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, maxRetries: 1, timeout: 30000 });
+  const res = await client.audio.transcriptions.create({ file, model: cfg.voice.sttModel, language: STT_LANGS[lang] || "en", prompt: STT_PROMPT, response_format: "json" });
+  return { text: String(res.text || "").trim(), usage: res.usage || null };
+}
+
+/** Text-to-speech. Returns MP3 bytes. */
+async function synthesize(env, cfg, text, instructions) {
+  if (cfg.mock) return new Uint8Array([73, 68, 51, 4, 0, 0, 0, 0, 0, 0]); // a tiny (silent) placeholder
+  const client = new OpenAI({ apiKey: env.OPENAI_API_KEY, maxRetries: 1, timeout: 30000 });
+  const res = await client.audio.speech.create({ model: cfg.voice.ttsModel, voice: cfg.voice.ttsVoice, input: text, instructions: instructions || TTS_INSTRUCTIONS, response_format: "mp3" });
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+const sttCost = (usage, seconds, cfg) => sttCostMicro(usage, seconds, cfg.voice.prices);
+
+async function handleTranscribe(request, env, user) {
+  const cfg = config(env);
+  if (!cfg.voice.enabled || (!cfg.mock && !env.OPENAI_API_KEY)) return json({ status: "unavailable" }, 503);
+  const form = await request.formData().catch(() => null);
+  const audio = form && form.get("audio");
+  if (!audio || typeof audio === "string") return json({ error: "No recording received." }, 400);
+  const seconds = Number(form.get("seconds") || 0);
+  if (audio.size > cfg.voice.maxBytes || seconds > cfg.voice.maxSeconds + 1) return json({ status: "too-long", maxSeconds: cfg.voice.maxSeconds }, 413);
+  if (audio.size < 1000 && !cfg.mock) return json({ status: "empty" }, 400);
+  const lang = STT_LANGS[form.get("lang")] ? form.get("lang") : "en";
+  const { day, month } = dayAndMonth(cfg.timeZone);
+  const r = await ledger(env).reserveKind("voice", user.sub, day, cfg.voice.dailyVoice, month, cfg.budgetMicro, 0);
+  if (!r.ok) return json({ status: r.reason, limit: cfg.voice.dailyVoice }, 429);
+  try {
+    const type = (audio.type || "audio/webm").split(";")[0];
+    const ext = { "audio/webm": "webm", "audio/ogg": "ogg", "audio/mp4": "mp4", "audio/mpeg": "mp3", "audio/wav": "wav", "audio/x-m4a": "m4a" }[type] || "webm";
+    const file = new File([await audio.arrayBuffer()], `question.${ext}`, { type });
+    const t = await transcribe(env, cfg, file, lang, form.get("mockText"));
+    await ledger(env).addSpendKind("voice", month, sttCost(t.usage, seconds, cfg));
+    return json({ status: t.text ? "ok" : "empty", text: t.text.slice(0, cfg.maxQuestionChars), remainingToday: Math.max(0, cfg.voice.dailyVoice - r.used) });
+  } catch (err) {
+    await ledger(env).release(`${user.sub}:voice`, day);
+    console.error("transcribe failed:", errInfo(err));
+    return json({ status: "unavailable" }, 502);
+  }
+}
+
+async function handleTts(request, env, user) {
+  const cfg = config(env);
+  if (!cfg.voice.enabled || (!cfg.mock && !env.OPENAI_API_KEY)) return json({ status: "unavailable" }, 503);
+  const body = await request.json().catch(() => ({}));
+  const text = String(body.text || "").replace(/\s+/g, " ").trim();
+  if (!text) return json({ error: "Nothing to read." }, 400);
+  if (text.length > cfg.voice.ttsMaxChars) return json({ status: "too-long", max: cfg.voice.ttsMaxChars }, 413);
+  const { day, month } = dayAndMonth(cfg.timeZone);
+  const r = await ledger(env).reserveKind("tts", user.sub, day, cfg.voice.dailyTts, month, cfg.budgetMicro, cfg.voice.ttsBudgetMicro);
+  if (!r.ok) return json({ status: r.reason, limit: cfg.voice.dailyTts }, 429);
+  try {
+    const mp3 = await synthesize(env, cfg, text);
+    await ledger(env).addSpendKind("tts", month, ttsCostMicro(text, cfg.voice.prices));
+    return new Response(mp3, { headers: { "content-type": "audio/mpeg", "cache-control": "no-store", "x-ai-generated-voice": "true", "x-remaining-today": String(Math.max(0, cfg.voice.dailyTts - r.used)) } });
+  } catch (err) {
+    await ledger(env).release(`${user.sub}:tts`, day);
+    console.error("tts failed:", errInfo(err));
+    return json({ status: "unavailable" }, 502);
+  }
+}
+
+/** Speaks each test question with the AI voice, transcribes it back, and sends the transcript through the normal tutor pipeline. */
+async function handleVoiceSelftest(env) {
+  const cfg = config(env);
+  if (!cfg.mock && !env.OPENAI_API_KEY) return json({ error: "OPENAI_API_KEY is not set." }, 503);
+  const { month } = dayAndMonth(cfg.timeZone);
+  if ((await ledger(env).status(month, "")).spentMicro >= cfg.budgetMicro) return json({ error: "Monthly budget reached." }, 429);
+  const results = [];
+  for (const t of VOICE_SELFTEST) {
+    try {
+      const mp3 = await synthesize(env, cfg, t.text, `Speak this ${{ en: "English", ru: "Russian", kk: "Kazakh" }[t.lang]} sentence clearly, like a 12-year-old student asking a question.`);
+      await ledger(env).addSpendKind("tts", month, ttsCostMicro(t.text, cfg.voice.prices));
+      const tr = await transcribe(env, cfg, new File([mp3], "q.mp3", { type: "audio/mpeg" }), t.lang, t.text);
+      await ledger(env).addSpendKind("voice", month, sttCost(tr.usage, 3, cfg));
+      const accuracy = Math.round(wordAccuracy(t.text, tr.text) * 100);
+      const r = await answerQuestion(env, cfg, tr.text || "(empty)", t.lang === "kk" ? "kk" : "ru");
+      const pass = accuracy >= 70 && (t.expect === "answer" ? r.status === "answered" : r.status === "declined");
+      results.push({ lang: t.lang, said: t.text, heard: tr.text, accuracy, expected: t.expect, got: r.status, sources: r.sources || [], pass });
+    } catch (err) {
+      console.error("voice selftest failed:", errInfo(err));
+      results.push({ lang: t.lang, said: t.text, heard: "", accuracy: 0, expected: t.expect, got: "error", reason: errInfo(err), pass: false });
+    }
+  }
+  const s = await ledger(env).status(month, "");
+  return json({ passed: results.filter((r) => r.pass).length, total: results.length, spentThisMonthUSD: s.spentMicro / 1e6, results });
+}
+
 // ---------- routes ----------
 
 async function handleLogin(request, env) {
@@ -261,12 +372,14 @@ export default {
       if (request.method === "GET" && path === "/api/health") {
         const cfg = config(env);
         // Reports only WHETHER a key is configured, never the key itself.
-        return json({ ok: true, openaiKeyConfigured: Boolean(env.OPENAI_API_KEY), signInReady: Boolean(env.SESSION_SECRET && (roster(env).users || []).length), ai: cfg.mock ? "mock" : Boolean(env.OPENAI_API_KEY), materials: MATERIALS.chunks.length });
+        return json({ ok: true, openaiKeyConfigured: Boolean(env.OPENAI_API_KEY), signInReady: Boolean(env.SESSION_SECRET && (roster(env).users || []).length), ai: cfg.mock ? "mock" : Boolean(env.OPENAI_API_KEY), materials: MATERIALS.chunks.length, voice: cfg.voice.enabled && (cfg.mock || Boolean(env.OPENAI_API_KEY)) ? { maxSeconds: cfg.voice.maxSeconds } : false });
       }
       if (request.method === "POST" && path === "/api/login") return await handleLogin(request, env);
       const user = await authed(request, env);
       if (!user) return json({ error: "Please sign in again." }, 401);
       if (request.method === "POST" && path === "/api/ask") return await handleAsk(request, env, user);
+      if (request.method === "POST" && path === "/api/transcribe") return await handleTranscribe(request, env, user);
+      if (request.method === "POST" && path === "/api/tts") return await handleTts(request, env, user);
       if (request.method === "GET" && path === "/api/me") {
         const cfg = config(env);
         return json({ name: user.name, role: user.role, dailyLimit: cfg.dailyLimit });
@@ -276,9 +389,10 @@ export default {
         const cfg = config(env);
         const { day, month } = dayAndMonth(cfg.timeZone);
         const s = await ledger(env).status(month, day);
-        return json({ month, spentUSD: s.spentMicro / 1e6, budgetUSD: cfg.budgetMicro / 1e6, today: s.today, model: cfg.chatModel });
+        return json({ month, spentUSD: s.spentMicro / 1e6, budgetUSD: cfg.budgetMicro / 1e6, voiceUSD: s.voiceMicro / 1e6, ttsUSD: s.ttsMicro / 1e6, ttsBudgetUSD: cfg.voice.ttsBudgetMicro / 1e6, today: s.today, model: cfg.chatModel });
       }
       if (request.method === "POST" && path === "/api/admin/selftest") return await handleSelftest(env);
+      if (request.method === "POST" && path === "/api/admin/voice-selftest") return await handleVoiceSelftest(env);
       return json({ error: "Not found" }, 404);
     } catch (err) {
       console.error("request failed:", path, errInfo(err));

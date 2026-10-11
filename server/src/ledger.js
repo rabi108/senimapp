@@ -30,6 +30,23 @@ export class Ledger extends DurableObject {
     return { ok: true, used: used + 1 };
   }
 
+  /**
+   * Like reserve(), for a feature with its own daily count and (optionally) its own monthly budget,
+   * e.g. kind "voice" (speech-to-text) or "tts" (AI voice). Spending of every kind also counts
+   * toward the overall monthly budget.
+   */
+  reserveKind(kind, login, day, dailyLimit, month, totalBudgetMicro, kindBudgetMicro) {
+    if (this.spentMicro(month) >= totalBudgetMicro) return { ok: false, reason: "budget" };
+    if (kindBudgetMicro > 0 && this.spentMicro(`${month}:${kind}`) >= kindBudgetMicro) return { ok: false, reason: "budget" };
+    return this.reserve(`${login}:${kind}`, day, dailyLimit, month, totalBudgetMicro);
+  }
+
+  addSpendKind(kind, month, micro) {
+    if (!(micro > 0)) return;
+    this.addSpend(`${month}:${kind}`, micro);
+    this.addSpend(month, micro);
+  }
+
   /** Gives a reserved question back (used when nothing was spent, e.g. a declined question). */
   release(login, day) {
     this.sql.exec("UPDATE usage SET n = MAX(n - 1, 0) WHERE day = ? AND login = ?", day, login);
@@ -42,8 +59,10 @@ export class Ledger extends DurableObject {
   }
 
   status(month, day) {
-    const today = this.sql.exec("SELECT COUNT(*) AS students, COALESCE(SUM(n), 0) AS questions FROM usage WHERE day = ?", day).toArray()[0];
-    return { month, spentMicro: this.spentMicro(month), today };
+    const voiceToday = this.sql.exec("SELECT COALESCE(SUM(n), 0) AS n FROM usage WHERE day = ? AND login LIKE '%:voice'", day).toArray()[0].n;
+    const ttsToday = this.sql.exec("SELECT COALESCE(SUM(n), 0) AS n FROM usage WHERE day = ? AND login LIKE '%:tts'", day).toArray()[0].n;
+    const textToday = this.sql.exec("SELECT COUNT(*) AS students, COALESCE(SUM(n), 0) AS questions FROM usage WHERE day = ? AND login NOT LIKE '%:%'", day).toArray()[0];
+    return { month, spentMicro: this.spentMicro(month), voiceMicro: this.spentMicro(`${month}:voice`), ttsMicro: this.spentMicro(`${month}:tts`), today: { ...textToday, voice: voiceToday, tts: ttsToday } };
   }
 
   /** Allows at most maxFails wrong codes per login per window. */

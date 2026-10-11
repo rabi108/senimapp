@@ -17,6 +17,30 @@ https://senim-tutor-server.senim-tutor-server.workers.dev/
    marked as supported or does not cite an excerpt it was given.
 6. If the AI is unavailable, over the daily limit or over the budget, the page answers from the offline lesson notes.
 
+## Voice
+
+- **Asking by voice:** the student taps the microphone (after a one-time privacy notice), speaks for up to
+  15 seconds and picks the language they are speaking. `/api/transcribe` sends the recording to OpenAI speech-to-text
+  (`gpt-4o-mini-transcribe`) and returns only the text. The text appears in the message box so the student can fix
+  it, and nothing is sent until they press Send. It then goes through the same `/api/ask` path as typed questions,
+  so voice cannot skip the approved-materials search.
+- **Listening to answers:** the 🔊 Listen button on AI answers uses OpenAI text-to-speech (`gpt-4o-mini-tts`), labelled
+  "This voice is AI-generated". After the daily AI-voice limit or the monthly AI-voice cap ($3), or if the service fails,
+  the device's free built-in voice is used, labelled "not AI".
+- **If voice fails,** the microphone shows a message and typing keeps working. Set `VOICE_ENABLED = "false"` to turn
+  voice off completely.
+- **Recordings are never stored or logged.** Each recording is held in memory for one request and then discarded.
+  The transcript goes back only to the student's browser. OpenAI's API data policy applies to what is sent to OpenAI
+  (no training on API data by default; possible retention of up to 30 days for abuse monitoring). Check this against
+  your school's rules.
+- **Voice limits** (`wrangler.toml`): 15 seconds and 600 KB per recording, 8 voice questions and 3 AI-voice answers per
+  student per day, 600 characters per spoken answer, $3 a month for the AI voice. All of it also counts toward the
+  overall monthly budget.
+- **Testing:** the teacher's **Run voice self-test** speaks 6 questions with the AI voice (an in-book and an off-topic
+  one in English, Russian and Kazakh), transcribes them and runs them through the tutor. It reports transcription
+  accuracy and whether each answer was given or declined correctly. The test voice is synthetic, so also try real
+  student recordings.
+
 Nothing about the conversation is stored. The server keeps only counters: questions per student per day,
 spending per month and failed sign-ins.
 
@@ -26,11 +50,12 @@ spending per month and failed sign-ins.
 |---|---|
 | `materials/` | The approved documents, and `approved.json`, which lists the ones the AI may use |
 | `src/chunks.json` | The approved documents split into cited excerpts (generated) |
-| `src/index.js` | Routes: `/api/health`, `/api/login`, `/api/ask`, `/api/admin/usage`, `/api/admin/selftest` |
+| `src/index.js` | Routes: `/api/health`, `/api/login`, `/api/ask`, `/api/transcribe`, `/api/tts`, `/api/admin/usage`, `/api/admin/selftest`, `/api/admin/voice-selftest` |
 | `src/rag.js` | Search, prompt and answer checks |
 | `src/auth.js` | Code hashing and session tokens |
 | `src/ledger.js` | Durable Object with the counters (SQLite) |
 | `src/selftest.js` | Questions used by the teacher's "Run AI self-test" button |
+| `src/voice.js` | Voice costs, transcription hints and the voice self-test questions |
 | `scripts/roster.mjs` | Add, reset and remove logins, and upload them |
 | `wrangler.toml` | Settings and limits (see `[vars]`) |
 

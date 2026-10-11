@@ -251,6 +251,19 @@ aside.rail { border-right: 1px solid var(--line); background: var(--surface); ov
 .composer input { flex: 1; min-width: 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font: inherit; }
 .composer .mode { max-width: 720px; margin: 0 auto 6px; font-size: 12px; color: var(--ink-2); }
 
+.micbtn { flex: none; width: 46px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); display: grid; place-items: center; }
+.micbtn svg { width: 22px; height: 22px; }
+.micbtn:hover { border-color: var(--accent); color: var(--accent); }
+.micbtn.busy { opacity: .5; cursor: progress; }
+.recbar { max-width: 720px; margin: 0 auto 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: var(--bad-soft); font-variant-numeric: tabular-nums; font-weight: 600; }
+.recdot { width: 12px; height: 12px; border-radius: 50%; background: var(--bad); animation: blink 1s infinite; }
+.recbar .btn { padding: 7px 12px; font-size: 14px; }
+.reclang { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-right: auto; }
+.reclang button { border: 0; background: var(--surface); padding: 6px 9px; font-size: 13px; }
+.reclang button.on { background: var(--ink); color: var(--surface); }
+.listen { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 600; }
+.voicenote { display: block; margin-top: 4px; font-size: 12px; color: var(--ink-2); }
+
 /* overlays */
 .overlay { position: fixed; inset: 0; background: rgb(8 12 24 / .55); display: grid; place-items: center; padding: 16px; z-index: 30; }
 .modal { width: 100%; max-width: 420px; background: var(--surface); border-radius: 22px; padding: 26px; display: grid; gap: 14px; justify-items: center; text-align: center; }
@@ -374,6 +387,7 @@ aside.rail { border-right: 1px solid var(--line); background: var(--surface); ov
           <div class="label">Teacher: AI tutor</div>
           <button class="btn secondary" id="usageBtn" type="button">Show AI spending</button>
           <button class="btn secondary" id="selftestBtn" type="button">Run AI self-test</button>
+          <button class="btn secondary" id="voiceTestBtn" type="button">Run voice self-test</button>
         </div>
         <button class="linkish" id="logoutBtn">Sign out</button>
       </div>
@@ -382,8 +396,20 @@ aside.rail { border-right: 1px solid var(--line); background: var(--surface); ov
       <div id="chat" role="log" aria-live="polite"></div>
       <div class="composer">
         <div class="mode" id="composerMode">Ask me about the terms in our lessons.</div>
+        <div class="recbar" id="recBar" hidden role="status" aria-live="polite">
+          <span class="recdot" aria-hidden="true"></span>
+          <span id="recTime">0:00</span>
+          <span class="reclang" role="group" aria-label="Language I'm speaking">
+            <button type="button" data-l="en">English</button><button type="button" data-l="kk">Қазақша</button><button type="button" data-l="ru">Русский</button>
+          </span>
+          <button type="button" class="btn" id="recStop">Stop</button>
+          <button type="button" class="btn secondary" id="recCancel">Cancel</button>
+        </div>
         <form id="askForm">
           <input id="askInput" placeholder="Ask a question, e.g. “What is an orbit?”" autocomplete="off" aria-label="Message">
+          <button class="micbtn" id="micBtn" type="button" aria-label="Ask with your voice" title="Ask with your voice" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.93V21h2v-2.07A7 7 0 0 0 19 12h-2Z" fill="currentColor"/></svg>
+          </button>
           <button class="btn" type="submit">Send</button>
         </form>
       </div>
@@ -1029,6 +1055,7 @@ let S = null;          // per-student saved state
 let LOGIN = null;
 let ACCOUNT = null;    // { name, role, unlockAll, token, exp }
 let ONLINE = false;    // true when the Senim server (AI tutor) is reachable
+let VOICE = false;     // { maxSeconds } when the server offers voice
 let RUN = 0;           // lesson run token (aborts an old lesson when a new one starts)
 let COMBO = 0;
 let inputWaiter = null;
@@ -1616,7 +1643,8 @@ async function askAI(text, e, term) {
   try { r = await api("api/ask", { question: text, lang: S.prefs.lang }); } catch (err) { r = { status: "unavailable" }; }
   if (r.status === "answered") {
     const tr = r.translation || "";
-    await tutor(t(r.answer, r.lang === "kk" ? tr : "", r.lang === "ru" ? tr : ""), { kind: "ai", src: (r.sources || []).join("; ") });
+    const b = await tutor(t(r.answer, r.lang === "kk" ? tr : "", r.lang === "ru" ? tr : ""), { kind: "ai", src: (r.sources || []).join("; ") });
+    if (VOICE) addListenButton(b, r.answer);
     return;
   }
   if (r.status === "declined") { await tutor(P.outOfBook); return; }
@@ -1627,7 +1655,7 @@ async function askAI(text, e, term) {
 async function showUsage() {
   const r = await api("api/admin/usage").catch(() => ({}));
   if (r.spentUSD === undefined) { await tutor("I couldn't load the usage numbers. Please try again."); return; }
-  await tutor(`**AI spending this month (${r.month}):** $${r.spentUSD.toFixed(4)} of $${r.budgetUSD} budget.\nToday: ${r.today.questions} AI questions from ${r.today.students} students. Model: ${r.model}.`);
+  await tutor(`**AI spending this month (${r.month}):** $${r.spentUSD.toFixed(4)} of $${r.budgetUSD} budget.\nOf this, voice-to-text $${(r.voiceUSD || 0).toFixed(4)} and AI voice $${(r.ttsUSD || 0).toFixed(4)} (AI voice cap $${r.ttsBudgetUSD}).\nToday: ${r.today.questions} AI questions from ${r.today.students} students, ${r.today.voice || 0} voice questions, ${r.today.tts || 0} AI-voice answers. Model: ${r.model}.`);
 }
 async function runSelftest() {
   await tutor("Running the AI self-test: 12 questions, 7 that the book answers and 5 it doesn't. This costs about one cent and takes up to a minute…");
@@ -1639,6 +1667,118 @@ async function runSelftest() {
   const stopped = r.checks && r.checks.some((c) => !c.ok) ? "\n**A setup check failed, so the questions were not run.** The ❌ line above says why." : "";
   await tutor(`**Setup checks**\n${checks.join("\n")}${stopped}\n\n**Self-test: ${r.passed}/${r.total} passed.** Spent this month: $${r.spentThisMonthUSD.toFixed(4)}.\n` + lines.join("\n"));
 }
+
+/* ============================ VOICE ============================ */
+const VP = {
+  privacyTitle: t("Using your voice", "Дауыспен сұрау", "Вопрос голосом"),
+  privacy: t("When you press the microphone, Senim records up to {s} seconds. The recording is sent to OpenAI to turn it into text, and then it is deleted. Senim never saves your voice. You will see the text and can fix it before you send it. Please ask only school questions and don't say personal information.",
+    "Микрофонды басқанда, Senim {s} секундқа дейін жазып алады. Жазба мәтінге айналдыру үшін OpenAI-ға жіберіледі, содан кейін өшіріледі. Senim сенің дауысыңды ешқашан сақтамайды. Мәтінді көріп, жібермес бұрын түзете аласың. Тек сабаққа қатысты сұрақ қой, жеке ақпарат айтпа.",
+    "Когда ты нажимаешь на микрофон, Senim записывает до {s} секунд. Запись отправляется в OpenAI, чтобы превратить её в текст, а потом удаляется. Senim никогда не сохраняет твой голос. Ты увидишь текст и сможешь исправить его перед отправкой. Задавай только учебные вопросы и не говори личную информацию."),
+  check: t("Check the text. Fix any mistakes, then press Send.", "Мәтінді тексер. Қатесін түзетіп, Send батырмасын бас.", "Проверь текст. Исправь ошибки и нажми Send."),
+  blocked: t("The microphone is blocked. Allow it in your browser settings, or type your question.", "Микрофон бұғатталған. Браузер баптауларында рұқсат бер немесе сұрағыңды жаз.", "Микрофон заблокирован. Разреши его в настройках браузера или напиши вопрос."),
+  limit: t("You've used today's voice questions. Please type your question.", "Бүгінгі дауыстық сұрақтарың бітті. Сұрағыңды жазып жібер.", "Голосовые вопросы на сегодня закончились. Напиши свой вопрос."),
+  empty: t("I didn't catch that. Try again, a little closer to the microphone.", "Естімей қалдым. Микрофонға жақындап, қайта байқап көр.", "Я не расслышал. Попробуй ещё раз, поближе к микрофону."),
+  down: t("Voice isn't working right now. Please type your question.", "Дауыс қазір жұмыс істемей тұр. Сұрағыңды жазып жібер.", "Голос сейчас не работает. Напиши свой вопрос."),
+  aiVoice: t("🔊 This voice is AI-generated.", "🔊 Бұл дауысты жасанды интеллект жасаған.", "🔊 Этот голос создан искусственным интеллектом."),
+  deviceVoice: t("🔊 Your device's built-in voice (not AI).", "🔊 Құрылғыңның өз дауысы (AI емес).", "🔊 Встроенный голос устройства (не AI).")
+};
+const both = (x) => S && S.prefs && x[S.prefs.lang] ? `${x.m} · ${x[S.prefs.lang]}` : x.m;
+let REC = null;
+function voiceSupported() { return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder); }
+function updateMic() { $("#micBtn").hidden = !(ONLINE && VOICE && voiceSupported() && ACCOUNT && ACCOUNT.token); }
+function voiceMsg(x) { $("#composerMode").textContent = both(x); }
+function confirmVoicePrivacy() {
+  if (S.voiceOk) return Promise.resolve(true);
+  return new Promise((res) => {
+    const ov = $("#overlay");
+    const txt = (x) => esc(x.m.replace("{s}", VOICE.maxSeconds));
+    const trn = (x) => (x[S.prefs.lang] ? `<p style="margin:0;color:var(--ink-2)">${esc(x[S.prefs.lang].replace("{s}", VOICE.maxSeconds))}</p>` : "");
+    ov.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="vpT" style="text-align:left;justify-items:stretch">
+      <h2 id="vpT" style="font-size:20px">${esc(both(VP.privacyTitle))}</h2><p style="margin:0">${txt(VP.privacy)}</p>${trn(VP.privacy)}
+      <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn secondary" type="button" id="vpNo">Not now</button><button class="btn" type="button" id="vpOk">OK, start</button></div></div>`;
+    ov.hidden = false; $("#vpOk").focus();
+    const close = (ok) => { ov.hidden = true; ov.innerHTML = ""; if (ok) { S.voiceOk = true; save(); } res(ok); };
+    $("#vpOk").onclick = () => close(true); $("#vpNo").onclick = () => close(false);
+  });
+}
+function pickMime() { return ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"].find((m) => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) || ""; }
+function setRecLang(l) { S.voiceLang = l; save(); document.querySelectorAll(".reclang button").forEach((b) => b.classList.toggle("on", b.dataset.l === l)); }
+async function startRecording() {
+  if (REC || !(await confirmVoicePrivacy())) return;
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { voiceMsg(VP.blocked); return; }
+  const mime = pickMime();
+  const rec = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 32000 } : { audioBitsPerSecond: 32000 });
+  REC = { rec, stream, chunks: [], start: Date.now(), cancelled: false };
+  rec.ondataavailable = (e) => { if (e.data && e.data.size) REC.chunks.push(e.data); };
+  rec.onstop = () => finishRecording();
+  rec.start();
+  setRecLang(S.voiceLang || "en");
+  $("#recBar").hidden = false; $("#micBtn").classList.add("busy");
+  const tick = () => {
+    if (!REC) return;
+    const secs = (Date.now() - REC.start) / 1000;
+    $("#recTime").textContent = `0:${String(Math.floor(secs)).padStart(2, "0")} / 0:${String(VOICE.maxSeconds).padStart(2, "0")}`;
+    if (secs >= VOICE.maxSeconds) stopRecording(false); else REC.timer = setTimeout(tick, 250);
+  };
+  tick();
+}
+function stopRecording(cancel) { if (!REC) return; REC.cancelled = !!cancel; clearTimeout(REC.timer); if (REC.rec.state !== "inactive") REC.rec.stop(); }
+async function finishRecording() {
+  const { stream, chunks, start, cancelled, rec } = REC; REC = null;
+  stream.getTracks().forEach((tr) => tr.stop());
+  $("#recBar").hidden = true;
+  if (cancelled) { $("#micBtn").classList.remove("busy"); setMode(inputWaiter ? "answer" : undefined); return; }
+  const seconds = Math.min(VOICE.maxSeconds, (Date.now() - start) / 1000);
+  const blob = new Blob(chunks, { type: (rec.mimeType || "audio/webm").split(";")[0] });
+  $("#composerMode").textContent = "Turning your voice into text…";
+  const fd = new FormData(); fd.append("audio", blob, "question"); fd.append("seconds", seconds.toFixed(1)); fd.append("lang", S.voiceLang || "en");
+  let r = {};
+  try { const res = await fetch("api/transcribe", { method: "POST", headers: { authorization: "Bearer " + ACCOUNT.token }, body: fd }); r = await res.json().catch(() => ({})); if (res.status === 401) r.status = "expired"; }
+  catch (e) { r = { status: "unavailable" }; }
+  $("#micBtn").classList.remove("busy");
+  if (r.status === "ok" && r.text) {
+    const input = $("#askInput"); input.value = r.text; input.focus(); input.setSelectionRange(r.text.length, r.text.length);
+    voiceMsg(VP.check); return;
+  }
+  voiceMsg(r.status === "limit" ? VP.limit : r.status === "empty" ? VP.empty : r.status === "expired" ? AIP.expired : VP.down);
+}
+function addListenButton(b, text) {
+  const btn = mk("button", "listen", "🔊 Listen"); btn.type = "button";
+  const note = mk("span", "voicenote"); note.hidden = true;
+  let audio = null;
+  btn.onclick = async () => {
+    if (audio && !audio.paused) { audio.pause(); return; }
+    if (audio) { audio.currentTime = 0; audio.play(); return; }
+    btn.disabled = true; btn.textContent = "🔊 Loading…";
+    try {
+      const res = await fetch("api/tts", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + ACCOUNT.token }, body: JSON.stringify({ text }) });
+      if (!res.ok || !(res.headers.get("content-type") || "").startsWith("audio/")) throw new Error("tts " + res.status);
+      audio = new Audio(URL.createObjectURL(await res.blob()));
+      note.textContent = both(VP.aiVoice); note.hidden = false;
+      await audio.play();
+    } catch (e) {
+      // Free fallback: the device's own voice.
+      note.textContent = both(VP.deviceVoice); note.hidden = false;
+      try { const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = .9; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (err) { note.textContent = both(VP.down); }
+    } finally { btn.disabled = false; btn.textContent = "🔊 Listen"; }
+  };
+  const tr = b.querySelector(":scope > .trbtn");
+  if (tr) { b.insertBefore(btn, tr); b.insertBefore(note, tr); } else { b.append(btn, note); }
+}
+async function runVoiceSelftest() {
+  await tutor("Running the voice self-test: the AI voice says 6 questions (2 each in English, Russian and Kazakh), the transcriber writes them down, and the tutor answers. This costs about 2 cents and takes up to a minute…");
+  let r;
+  try { const res = await fetch("api/admin/voice-selftest", { method: "POST", headers: { authorization: "Bearer " + ACCOUNT.token } }); r = await res.json(); } catch (e) { r = { error: "Can't reach the server." }; }
+  if (!r.results) { await tutor("Voice self-test failed: " + (r.error || "unknown error")); return; }
+  const lines = r.results.map((x) => `${x.pass ? "✅" : "❌"} [${x.lang}] said “${x.said}” → heard “${x.heard}” (${x.accuracy}% words) → ${x.got}${x.reason ? " [" + x.reason + "]" : ""}${x.sources && x.sources.length ? " (" + x.sources.join("; ") + ")" : ""}`);
+  await tutor(`**Voice self-test: ${r.passed}/${r.total} passed.** Spent this month: $${r.spentThisMonthUSD.toFixed(4)}.\nThe test voice is synthetic; please also try a few real recordings from students.\n` + lines.join("\n"));
+}
+$("#micBtn").onclick = () => startRecording();
+$("#recStop").onclick = () => stopRecording(false);
+$("#recCancel").onclick = () => stopRecording(true);
+document.querySelectorAll(".reclang button").forEach((b) => (b.onclick = () => setRecLang(b.dataset.l)));
 
 function send(text) {
   text = String(text).trim(); if (!text) return;
@@ -1695,7 +1835,7 @@ function renderSettings() {
   document.querySelectorAll("#langSeg button").forEach((b) => b.classList.toggle("on", b.dataset.v === S.prefs.lang));
   document.querySelectorAll("#levelSeg button").forEach((b) => b.classList.toggle("on", b.dataset.v === S.prefs.level));
 }
-function renderAll() { $("#meName").textContent = ACCOUNT.name; $("#teacherTools").hidden = !(ONLINE && ACCOUNT.role === "teacher"); renderHeader(); renderLessons(); renderBadges(); renderBalance(); renderSettings(); }
+function renderAll() { updateMic(); $("#meName").textContent = ACCOUNT.name; $("#teacherTools").hidden = !(ONLINE && ACCOUNT.role === "teacher"); renderHeader(); renderLessons(); renderBadges(); renderBalance(); renderSettings(); }
 
 function nextItem() {
   for (let i = 0; i < LESSONS.length; i++) if (!(S.lessons[LESSONS[i].id] || {}).done) return unlocked(i) ? LESSONS[i] : null;
@@ -1744,6 +1884,7 @@ async function detectServer() {
     const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 4000);
     const r = await fetch("api/health", { signal: ctl.signal, cache: "no-store" }); clearTimeout(timer);
     const h = r.ok ? await r.json() : null;
+    VOICE = h && h.voice ? h.voice : false;
     return !!(h && h.ok && h.signInReady);
   } catch (e) { return false; }
 }
@@ -1858,7 +1999,8 @@ $("#langSeg").onclick = (e) => { const b = e.target.closest("button"); if (!b) r
 $("#levelSeg").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; S.prefs.level = b.dataset.v; save(); renderSettings(); toast("Level: " + LEVELS[b.dataset.v].name); };
 $("#usageBtn").onclick = () => { closeRail(); showUsage(); };
 $("#selftestBtn").onclick = () => { closeRail(); runSelftest(); };
-$("#logoutBtn").onclick = () => { RUN++; inputWaiter = null; store.del("senim:session"); LOGIN = null; S = null; ACCOUNT = null; $("#loginCode").value = ""; closeRail(); show("home"); };
+$("#voiceTestBtn").onclick = () => { closeRail(); runVoiceSelftest(); };
+$("#logoutBtn").onclick = () => { stopRecording(true); RUN++; inputWaiter = null; store.del("senim:session"); LOGIN = null; S = null; ACCOUNT = null; $("#loginCode").value = ""; closeRail(); show("home"); };
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#overlay").hidden && $("#glClose")) $("#glClose").click(); });
 </script>
 </body>
