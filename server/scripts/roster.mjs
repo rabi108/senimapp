@@ -1,6 +1,7 @@
 // Manages student and teacher logins.
 //   npm run roster -- add <login> "<Name>" [teacher]   add a person (a code is generated)
 //   npm run roster -- reset <login>                     give someone a new code
+//   npm run roster -- setcode <login> <code>            set a chosen code (use --students for every student)
 //   npm run roster -- remove <login>
 //   npm run roster -- list                              show logins and codes (for printing cards)
 //   npm run roster -- --upload                          send the hashed list to Cloudflare (ROSTER_JSON secret)
@@ -27,6 +28,13 @@ if (cmd === "add") {
   const p = people.find((x) => x.login === String(login).toLowerCase());
   if (!p) throw new Error("No such login");
   p.code = newCode(); save(); console.log(`New code for ${p.login} saved. Upload to apply it.`);
+} else if (cmd === "setcode") {
+  const code = name;
+  if (!login || !code || code.length < 4) throw new Error("Usage: npm run roster -- setcode <login|--students> <code of 4+ characters>");
+  const who = login === "--students" ? people.filter((p) => p.role === "student") : people.filter((p) => p.login === login.toLowerCase());
+  if (!who.length) throw new Error("No such login");
+  for (const p of who) p.code = code;
+  save(); console.log(`Code set for ${who.map((p) => p.login).join(", ")}. Upload to apply it.`);
 } else if (cmd === "remove") {
   const i = people.findIndex((x) => x.login === String(login).toLowerCase());
   if (i < 0) throw new Error("No such login");
@@ -42,5 +50,5 @@ if (cmd === "add") {
   const r = spawnSync("npx", ["wrangler", "secret", "put", "ROSTER_JSON"], { input: JSON.stringify({ version: 1, users }), stdio: ["pipe", "inherit", "inherit"] });
   process.exit(r.status ?? 1);
 } else {
-  console.log(readFileSync(new URL(import.meta.url), "utf8").split("\n").slice(1, 8).join("\n"));
+  console.log(readFileSync(new URL(import.meta.url), "utf8").split("\n").slice(1, 9).join("\n"));
 }
