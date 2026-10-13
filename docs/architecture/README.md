@@ -42,4 +42,6 @@ the AI is unavailable.
 | HTML/JS widget on GitHub Pages | Page served by the same Worker, with an offline tutor |
 | Feedback from students to the instructor | Teacher view with progress bars, spending and self-tests |
 
+A paper-style write-up grounded in Berengueres (2025), with design rationale and an evaluation plan, is in [system-architecture.md](system-architecture.md).
+
 Source: `architecture.svg` (edit it, then export the PNG at 2× from a browser).
