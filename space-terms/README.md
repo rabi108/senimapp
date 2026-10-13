@@ -62,8 +62,8 @@ guided questions → the game → free questions → a 3-question check (stars) 
 - **Emotional support.** Praise is varied and comes with emojis ("I'm proud of you! 🌟"). Wrong answers get
   encouragement ("mistakes help us learn! 💪", "I love that you kept trying!"), and every 3 correct answers in a row
   show "🔥 3 in a row! You're on fire!". AI answers also start with a short friendly opener.
-- **Sounds.** A short "ching" plays for every correct answer and matched pair, and a little fanfare plays for a new
-  badge. The sounds are made in the browser (no audio files). Students can switch them off in the menu (*Sounds*).
+- **Sounds.** A short "ching" plays for every correct answer and matched pair, a soft, low "uh-oh" plays for a wrong
+  answer or a wrong pair, and a little fanfare plays for a new badge. The sounds are made in the browser (no audio files). Students can switch them off in the menu (*Sounds*).
 
 Progress is saved in the browser's `localStorage`, separately for each login.
 

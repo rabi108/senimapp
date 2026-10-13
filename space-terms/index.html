@@ -1295,14 +1295,15 @@ function playSound(kind) {
   try {
     AC = AC || new (window.AudioContext || window.webkitAudioContext)();
     if (AC.state === "suspended") AC.resume();
-    if (kind === "badge") [523, 659, 784, 1047].forEach((f, i) => { tone(f, i * 0.11, 0.35, 0.18, "triangle"); tone(f * 2, i * 0.11, 0.25, 0.05); });
+    if (kind === "oops") { tone(392, 0, 0.22, 0.12, "triangle"); tone(311, 0.16, 0.38, 0.12, "triangle"); } // soft "uh-oh", not harsh
+    else if (kind === "badge") [523, 659, 784, 1047].forEach((f, i) => { tone(f, i * 0.11, 0.35, 0.18, "triangle"); tone(f * 2, i * 0.11, 0.25, 0.05); });
     else { tone(1318, 0, 0.45, 0.16); tone(1976, 0.07, 0.6, 0.12); tone(2637, 0.07, 0.35, 0.04); } // "ching!"
   } catch (e) {}
 }
 function award(n) { if (!n) return; S.xp += n; toast("+" + n + " XP"); renderHeader(); save(); }
-function bumpCombo(ok) {
+function bumpCombo(ok, quiet) {
   COMBO = ok ? COMBO + 1 : 0;
-  if (ok) playSound("ching");
+  if (!quiet) playSound(ok ? "ching" : "oops");
   const p = $("#comboPill");
   p.hidden = COMBO < 2; p.textContent = "Combo ×" + COMBO;
   if (ok && COMBO > 0 && COMBO % 3 === 0) setTimeout(() => toast(`🔥 ${COMBO} in a row! You're on fire!`), 700);
@@ -1328,7 +1329,7 @@ function termCard(key) {
 
 /* ============================ LESSON ENGINE ============================ */
 async function runLesson(L) {
-  const tok = ++RUN; inputWaiter = null; QA.pending = null; COMBO = 0; bumpCombo(false);
+  const tok = ++RUN; inputWaiter = null; QA.pending = null; COMBO = 0; bumpCombo(false, true);
   const g = () => { if (tok !== RUN) throw ABORT; };
   closeRail(); renderLessons(L.id);
   chat.append(mk("div", "lesson-head", `<div class="label">Lesson ${L.id.slice(1)} · ${esc(L.sub)}</div><h2>${esc(L.title)}</h2><p>${esc(L.src)}</p>`));
@@ -1581,7 +1582,7 @@ async function runFinal() {
         const [[e1, c1], [e2, c2]] = open; open = [];
         if (c1.k === c2.k) { e1.classList.replace("up", "ok"); e2.classList.replace("up", "ok"); pairs++; playSound("ching"); box.querySelector(".g-pairs").textContent = `Pairs: ${pairs} / ${keys.length}`;
           if (pairs === keys.length) finish(); }
-        else { lock = true; await sleep(900); e1.classList.remove("up"); e2.classList.remove("up"); e1.setAttribute("aria-label", "Hidden card"); e2.setAttribute("aria-label", "Hidden card"); lock = false; }
+        else { lock = true; playSound("oops"); await sleep(900); e1.classList.remove("up"); e2.classList.remove("up"); e1.setAttribute("aria-label", "Hidden card"); e2.setAttribute("aria-label", "Hidden card"); lock = false; }
       }
     };
     grid.append(el);
