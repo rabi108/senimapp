@@ -394,6 +394,8 @@ aside.rail { border-right: 1px solid var(--line); background: var(--surface); ov
         <div class="seg" id="langSeg"><button data-v="kk">Қазақша</button><button data-v="ru">Русский</button></div>
         <div class="label">English level</div>
         <div class="seg" id="levelSeg"><button data-v="s">Starter</button><button data-v="m">Middle</button><button data-v="a">Advanced</button></div>
+        <div class="label">Sounds</div>
+        <div class="seg" id="soundSeg"><button data-v="on">🔔 On</button><button data-v="off">🔕 Off</button></div>
         <button class="btn secondary" id="glossBtn">Open my glossary</button>
         <div id="teacherTools" class="settings" hidden>
           <div class="label">Teacher: AI tutor</div>
@@ -525,25 +527,32 @@ const P = {
     t("Correct! Well done! 👏", "Дұрыс! Өте жақсы! 👏", "Правильно! Отлично! 👏"),
     t("You got it! 👍", "Таптың! 👍", "Верно! 👍"),
     t("Super! ⭐", "Керемет! ⭐", "Супер! ⭐"),
-    t("Exactly right! 😊", "Дәл солай! 😊", "Точно! 😊")
+    t("Exactly right! 😊", "Дәл солай! 😊", "Точно! 😊"),
+    t("Brilliant! You're a real space explorer! 🚀", "Керемет! Сен нағыз ғарыш зерттеушісісің! 🚀", "Блестяще! Ты настоящий исследователь космоса! 🚀"),
+    t("Wow, you remembered! I'm proud of you! 🌟", "Уау, есіңде қалыпты! Мен сені мақтан тұтамын! 🌟", "Ого, ты запомнил(а)! Я тобой горжусь! 🌟"),
+    t("Amazing thinking! 🧠✨", "Тамаша ойладың! 🧠✨", "Отличная мысль! 🧠✨"),
+    t("Yes! You're getting really good at this! 💫", "Иә! Сен мұны өте жақсы меңгеріп келесің! 💫", "Да! У тебя получается всё лучше! 💫")
   ],
-  wrong: t("Hmm, that's not correct. 🙂 Our book says something different.", "Хм, бұл дұрыс емес. 🙂 Кітабымызда басқаша жазылған.", "Хм, это неправильно. 🙂 В нашей книге написано по-другому."),
+  wrong: t("Hmm, that's not correct. 🙂 That's okay, mistakes help us learn! 💪", "Хм, бұл дұрыс емес. 🙂 Ештеңе етпейді, қателер үйренуге көмектеседі! 💪", "Хм, это неправильно. 🙂 Ничего страшного, ошибки помогают учиться! 💪"),
   revise: t("📖 Let's look again:", "📖 Тағы бір қарайық:", "📖 Давай посмотрим ещё раз:"),
   again: t("Now try again:", "Енді тағы байқап көр:", "Теперь попробуй ещё раз:"),
   hint: t("💡 Hint:", "💡 Кеңес:", "💡 Подсказка:"),
-  reveal: t("No worries! Here is the answer:", "Ештеңе етпейді! Міне, жауабы:", "Ничего страшного! Вот ответ:"),
+  reveal: t("No worries, you're doing great! 🤗 Here is the answer:", "Уайымдама, сен жақсы оқып жатырсың! 🤗 Міне, жауабы:", "Не переживай, у тебя всё хорошо получается! 🤗 Вот ответ:"),
   choicesNow: t("Here are some choices. Pick one:", "Міне, жауап нұсқалары. Біреуін таңда:", "Вот варианты ответа. Выбери один:"),
   right: t("The right answer is", "Дұрыс жауап:", "Правильный ответ:"),
   checkBook: t("Let's check that with our book! 📖", "Мұны кітаппен тексерейік! 📖", "Давай проверим это по книге! 📖"),
   bookSays: t("Here is what the book says:", "Кітапта былай жазылған:", "Вот что написано в книге:"),
-  stillWrong: t("That's still not correct, but good try! 💪", "Бұл әлі дұрыс емес, бірақ жақсы талпыныс! 💪", "Это всё ещё неправильно, но хорошая попытка! 💪"),
-  outOfBook: t("Hmm, I can't find that in our book. 📖 I only answer from *What's in Our Universe?* Chapters 1–3, so I never guess. Please ask your teacher in class! You can ask me things like “What is an orbit?” or “What is a probe?”",
-    "Хм, мен мұны кітабымыздан таба алмадым. 📖 Мен тек *What's in Our Universe?* кітабының 1–3 тарауларынан жауап беремін, сондықтан ешқашан болжап айтпаймын. Бұл сұрақты сабақта мұғаліміңнен сұра! Менен мынадай сұрақтар қоюға болады: «What is an orbit?» немесе «What is a probe?»",
-    "Хм, я не нашёл этого в нашей книге. 📖 Я отвечаю только по книге *What's in Our Universe?*, главы 1–3, поэтому никогда не угадываю. Спроси, пожалуйста, учителя на уроке! Меня можно спросить, например: «What is an orbit?» или «What is a probe?»"),
+  stillWrong: t("That's still not correct, but I love that you kept trying! 💪🙂", "Бұл әлі дұрыс емес, бірақ тырысқаның маған ұнайды! 💪🙂", "Это всё ещё неправильно, но мне нравится, что ты не сдаёшься! 💪🙂"),
+  offTopic: t("Hmm, that question isn't about our topic. 🙂 We're learning about **space** here: the sun, the moon, planets and our space words. 🚀 Try asking “What is an orbit?” or “What is a probe?”",
+    "Хм, бұл сұрақ біздің тақырыпқа қатысты емес. 🙂 Біз мұнда **ғарыш** туралы үйреніп жатырмыз: Күн, Ай, ғаламшарлар және ғарыш сөздері. 🚀 «What is an orbit?» немесе «What is a probe?» деп сұрап көр.",
+    "Хм, этот вопрос не по нашей теме. 🙂 Здесь мы изучаем **космос**: Солнце, Луну, планеты и наши космические слова. 🚀 Спроси, например: «What is an orbit?» или «What is a probe?»"),
+  notInLessons: t("Great space question! 🌟 But we don't learn that in our lessons, and I don't want to guess. Ask your teacher in class! 🙋 I can help with **orbit**, **axis**, **eclipse**, **naked eye** and **probe**.",
+    "Ғарыш туралы керемет сұрақ! 🌟 Бірақ біз оны сабақтарымызда өтпейміз, ал мен болжап айтқым келмейді. Сабақта мұғаліміңнен сұра! 🙋 Мен **orbit**, **axis**, **eclipse**, **naked eye** және **probe** туралы көмектесе аламын.",
+    "Отличный вопрос про космос! 🌟 Но мы не проходим это на наших уроках, а гадать я не хочу. Спроси учителя на уроке! 🙋 Я помогу с **orbit**, **axis**, **eclipse**, **naked eye** и **probe**."),
   hello: t("Hi there! 👋 Ask me about **orbit**, **axis**, **eclipse**, **naked eye** or **probe**. Or pick a lesson from the menu.",
     "Сәлем! 👋 Менен **orbit**, **axis**, **eclipse**, **naked eye** немесе **probe** туралы сұра. Не болмаса мәзірден сабақ таңда.",
     "Привет! 👋 Спроси меня про **orbit**, **axis**, **eclipse**, **naked eye** или **probe**. Или выбери урок в меню."),
-  thanks: t("You're welcome! 😊 Keep asking questions. That's how scientists learn, too!", "Оқасы жоқ! 😊 Сұрақ қоя бер. Ғалымдар да солай үйренеді!", "Пожалуйста! 😊 Задавай вопросы дальше. Учёные тоже так учатся!"),
+  thanks: t("You're welcome! 😊 Keep asking questions. That's how scientists learn, too! 🔭", "Оқасы жоқ! 😊 Сұрақ қоя бер. Ғалымдар да солай үйренеді!", "Пожалуйста! 😊 Задавай вопросы дальше. Учёные тоже так учатся!"),
   nothingToTr: t("There's nothing to translate yet. 🙂", "Әзірге аударатын ештеңе жоқ. 🙂", "Пока нечего переводить. 🙂"),
   partialTr: t("I can't translate all of this message, but here are the key words:", "Бұл хабарды толық аудара алмаймын, бірақ міне, негізгі сөздер:", "Я не могу перевести всё сообщение, но вот главные слова:"),
   quickCheck: t("Quick check! ✅ 3 questions, one try each. Every right answer = a star ⭐", "Жылдам тексеру! ✅ 3 сұрақ, әрқайсысына бір мүмкіндік. Әр дұрыс жауап = бір жұлдыз ⭐", "Быстрая проверка! ✅ 3 вопроса, одна попытка на каждый. Каждый правильный ответ = звезда ⭐"),
@@ -552,6 +561,9 @@ const P = {
   saved: t("They are saved in your glossary. 📒", "Олар сөздігіңде сақталды. 📒", "Они сохранены в твоём словаре. 📒"),
   keyTerm: t("New word!", "Жаңа сөз!", "Новое слово!")
 };
+/* Is a question about space at all? Decides between "not our topic" and "not in our lessons". */
+const SPACE_RX = /(?<![\p{L}])((space|planet|solar|lunar|earth|black hole|юпитер|сатурн|лун|қара құрдым|черн(ая|ой|ые) дыр|mercury|venus|jupiter|saturn|uranus|neptune|pluto|orbit|rotat|eclipse|telescope|rocket|astronaut|galax|universe|comet|asteroid|meteor|gravity|satellite|naked eye|ғарыш|ғалам|жұлдыз|меркурий|шолпан|венера|телескоп|ракета|аспан|тұтылу|орбита|космос|планет|звезд|солнц|земл|меркури|венер|ракет|космонавт|астронавт|галактик|вселенн|комет|астероид|метеор|спутник|затмени|орбит)|(suns?|stars?|moons?|sky|axis|mars|probes?|ай|айдың|айға|айды|күн|күннің|күнді|күнге|жер|жердің|жерді|марс|зонд|ось|луна|луну|луны|небо)(?![\p{L}]))/iu;
+function declineMsg(text) { return SPACE_RX.test(String(text).toLowerCase()) ? P.notInLessons : P.offTopic; }
 function exploreText(terms) {
   return t(`Your turn! 🙋 Ask me anything about ${terms}. I only use our Reader, so my answers match the book. Tap a question or type your own:`,
     `Сенің кезегің! 🙋 ${terms} туралы кез келген сұрақ қой. Мен тек Оқулықты қолданамын, сондықтан жауаптарым кітапқа сай. Сұрақты бас немесе өзіңдікін жаз:`,
@@ -1269,11 +1281,31 @@ function setMode(m) {
   else { input.placeholder = "Ask a question, e.g. “What is an orbit?”"; mode.textContent = `Ask me about our words. Type ${trWord} to see my last message in your language.`; }
 }
 function toast(msg) { const e = mk("div", "toast", esc(msg)); document.body.append(e); setTimeout(() => e.remove(), 1400); }
+/* Reward sounds, made in the browser (no audio files). Students can turn them off in the menu. */
+let AC = null;
+function soundOn() { return store.get("senim:sound") !== "off"; }
+function tone(freq, start, dur, vol, type) {
+  const o = AC.createOscillator(), g = AC.createGain(), t0 = AC.currentTime + start;
+  o.type = type || "sine"; o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g).connect(AC.destination); o.start(t0); o.stop(t0 + dur + 0.02);
+}
+function playSound(kind) {
+  if (!soundOn()) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === "suspended") AC.resume();
+    if (kind === "badge") [523, 659, 784, 1047].forEach((f, i) => { tone(f, i * 0.11, 0.35, 0.18, "triangle"); tone(f * 2, i * 0.11, 0.25, 0.05); });
+    else { tone(1318, 0, 0.45, 0.16); tone(1976, 0.07, 0.6, 0.12); tone(2637, 0.07, 0.35, 0.04); } // "ching!"
+  } catch (e) {}
+}
 function award(n) { if (!n) return; S.xp += n; toast("+" + n + " XP"); renderHeader(); save(); }
 function bumpCombo(ok) {
   COMBO = ok ? COMBO + 1 : 0;
+  if (ok) playSound("ching");
   const p = $("#comboPill");
   p.hidden = COMBO < 2; p.textContent = "Combo ×" + COMBO;
+  if (ok && COMBO > 0 && COMBO % 3 === 0) setTimeout(() => toast(`🔥 ${COMBO} in a row! You're on fire!`), 700);
   return ok && COMBO >= 3 ? 2 : 0;
 }
 function praise() { return P.praise[Math.floor(Math.random() * P.praise.length)]; }
@@ -1458,7 +1490,7 @@ function sortGame(b, cfg) {
       bins.forEach((x) => (x.disabled = true));
       const it = items[i], ok = btn.dataset.b === it.b;
       if (ok) { score++; const bonus = bumpCombo(true); xp += 5 + bonus; card.classList.add("good"); why.textContent = "Yes! 🎉 " + it.why + (bonus ? " Combo bonus +2! ⚡" : ""); }
-      else { bumpCombo(false); card.classList.add("bad"); why.textContent = `That's not correct. 🙂 It's “${it.b}”. ${it.why}`; }
+      else { bumpCombo(false); card.classList.add("bad"); why.textContent = `That's not correct, but nice try! 🙂 It's “${it.b}”. ${it.why}`; }
       await sleep(reduced ? 600 : (ok ? 1100 : 2400));
       i++;
       if (i < items.length) show();
@@ -1547,7 +1579,7 @@ async function runFinal() {
       if (open.length === 2) {
         moves++; box.querySelector(".g-moves").textContent = "Moves: " + moves;
         const [[e1, c1], [e2, c2]] = open; open = [];
-        if (c1.k === c2.k) { e1.classList.replace("up", "ok"); e2.classList.replace("up", "ok"); pairs++; box.querySelector(".g-pairs").textContent = `Pairs: ${pairs} / ${keys.length}`;
+        if (c1.k === c2.k) { e1.classList.replace("up", "ok"); e2.classList.replace("up", "ok"); pairs++; playSound("ching"); box.querySelector(".g-pairs").textContent = `Pairs: ${pairs} / ${keys.length}`;
           if (pairs === keys.length) finish(); }
         else { lock = true; await sleep(900); e1.classList.remove("up"); e2.classList.remove("up"); e1.setAttribute("aria-label", "Hidden card"); e2.setAttribute("aria-label", "Hidden card"); lock = false; }
       }
@@ -1625,7 +1657,7 @@ async function qaInner(text) {
   }
   if (!e) {
     if (term) { await tutor([P.keyTerm, " **" + TERMS[term].en + "**"], { kind: "dir", card: term }); return; }
-    await tutor(P.outOfBook);
+    await tutor(declineMsg(text));
     return;
   }
   // A statement, not a question (e.g. "the moon makes its own light"): check it against the book.
@@ -1676,10 +1708,10 @@ async function api(path, body) {
   if (r.status === 401) { store.del("senim:session"); ACCOUNT.token = null; data.status = "expired"; }
   return data;
 }
-async function localAnswer(e, term) {
+async function localAnswer(e, term, text) {
   if (e) await tutor(e.a, { kind: "dir", src: e.src });
   else if (term) await tutor([P.keyTerm, " **" + TERMS[term].en + "**"], { kind: "dir", card: term });
-  else await tutor(P.outOfBook);
+  else await tutor(declineMsg(text));
 }
 async function askAI(text, e, term) {
   await typing(300);
@@ -1691,10 +1723,10 @@ async function askAI(text, e, term) {
     if (VOICE) addListenButton(b, r.answer);
     return;
   }
-  if (r.status === "declined") { await tutor(P.outOfBook); return; }
+  if (r.status === "declined") { await tutor(declineMsg(text)); return; }
   if (r.status === "too-long") { await tutor(t("That question is a bit long. Can you ask it in one short sentence?", "Сұрақ сәл ұзын. Оны бір қысқа сөйлеммен қоя аласың ба?", "Вопрос немного длинный. Можешь задать его одним коротким предложением?")); return; }
   await tutor(r.status === "limit" ? AIP.limit : r.status === "expired" ? AIP.expired : AIP.offline);
-  await localAnswer(e, term);
+  await localAnswer(e, term, text);
 }
 async function showUsage() {
   const r = await api("api/admin/usage").catch(() => ({}));
@@ -1878,6 +1910,7 @@ function renderBalance() {
 function renderSettings() {
   document.querySelectorAll("#langSeg button").forEach((b) => b.classList.toggle("on", b.dataset.v === S.prefs.lang));
   document.querySelectorAll("#levelSeg button").forEach((b) => b.classList.toggle("on", b.dataset.v === S.prefs.level));
+  document.querySelectorAll("#soundSeg button").forEach((b) => b.classList.toggle("on", b.dataset.v === (soundOn() ? "on" : "off")));
 }
 function renderAll() { updateMic(); $("#meName").textContent = ACCOUNT.name; $("#teacherTools").hidden = !(ONLINE && ACCOUNT.role === "teacher"); renderHeader(); renderLessons(); renderBadges(); renderBalance(); renderSettings(); }
 
@@ -1891,7 +1924,7 @@ function celebrate(badge, text) {
   return new Promise((res) => {
     const ov = $("#overlay");
     ov.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="bdT">${badgeSVG(badge.id)}<div class="label">New badge</div><h2 id="bdT">${esc(badge.name)}</h2><p style="margin:0">${fmt(text)}</p><button class="btn" type="button" id="bdOk">Continue</button></div>`;
-    ov.hidden = false; $("#bdOk").focus();
+    ov.hidden = false; $("#bdOk").focus(); playSound("badge");
     $("#bdOk").onclick = () => { ov.hidden = true; ov.innerHTML = ""; res(); };
   });
 }
@@ -2042,6 +2075,7 @@ document.addEventListener("click", (e) => {
 $("#menuBtn").onclick = () => $("#rail").classList.toggle("open");
 $("#glossBtn").onclick = () => { closeRail(); openGlossary(); };
 $("#langSeg").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; S.prefs.lang = b.dataset.v; save(); renderSettings(); toast("Glossary: " + LANGNAME[b.dataset.v]); };
+$("#soundSeg").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; store.set("senim:sound", b.dataset.v); renderSettings(); if (b.dataset.v === "on") playSound("ching"); };
 $("#levelSeg").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; S.prefs.level = b.dataset.v; save(); renderSettings(); toast("Level: " + LEVELS[b.dataset.v].name); };
 $("#usageBtn").onclick = () => { closeRail(); showUsage(); };
 $("#progressBtn").onclick = () => { closeRail(); openProgress(); };

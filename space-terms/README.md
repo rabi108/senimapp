@@ -40,16 +40,18 @@ guided questions → the game → free questions → a 3-question check (stars) 
   balance: when guided turns fall below 50%, the tutor answers a question with a guiding question first. The student
   can always say "hint" or "just tell me". The sidebar meter *How I teach you* shows the current split.
 - **Knowledge base limited to the book.** Free questions are matched against a curated set of facts from Reader
-  Chapters 1–3 (in `KB` inside `index.html`), and every answer cites its page. Anything outside the book gets "I can't
-  find that in our book, please bring it to class" instead of a guess. Students can ask in English, and some Russian
+  Chapters 1–3 (in `KB` inside `index.html`), and every answer cites its page. The tutor never guesses. A question that
+  is not about space at all (football, weather, jokes) gets "that question isn't about our topic, we're learning about
+  space here" with example questions. A space question the lessons don't cover (e.g. black holes) gets "great space
+  question, but we don't learn that in our lessons, ask your teacher". Space words in English, Kazakh and Russian
+  decide which one (`SPACE_RX` in `index.html`). Students can ask in English, and some Russian
   and Kazakh keywords also work (e.g. "затмение", "тұтылу"). "What is axis in Russian?" returns the translation.
 - **Translation on request.** Every tutor message has a translate button (Аудару / Перевести). Students can also type
   "translate", "аудар", "переведи", "I don't understand", "түсінбедім" or "не понимаю" to get the last message in
   their language, or in Kazakh or Russian if they name it. All lesson text, hints, feedback and book answers are written
   in English, Kazakh and Russian (`t(english, kazakh, russian)` in the code). Game clues and quick-check questions stay
   in English on purpose, because they are English practice.
-- **Wrong answers.** When an answer is wrong, the tutor says it is not correct and that the book says something
-  different. Then it explains the term again and repeats the question. Further wrong answers get hints, and finally the
+- **Wrong answers.** When an answer is wrong, the tutor says it is not correct and that mistakes help us learn. Then it explains the term again and repeats the question. Further wrong answers get hints, and finally the
   answer. If a student types a statement instead of a question (e.g. "the moon makes its own light"), the tutor checks
   it against the book.
 - **Level adaptation.** Starter: simpler definitions, translations next to every term, up to 3 hints, answer choices
@@ -57,6 +59,11 @@ guided questions → the game → free questions → a 3-question check (stars) 
   answers. Students can change the language and level in the menu.
 - **Gamification.** XP for correct answers (more on the first try), a combo bonus for 3 correct in a row, ranks
   (Space Cadet → Mission Commander), stars per lesson, 4 badges, and lessons that unlock in order.
+- **Emotional support.** Praise is varied and comes with emojis ("I'm proud of you! 🌟"). Wrong answers get
+  encouragement ("mistakes help us learn! 💪", "I love that you kept trying!"), and every 3 correct answers in a row
+  show "🔥 3 in a row! You're on fire!". AI answers also start with a short friendly opener.
+- **Sounds.** A short "ching" plays for every correct answer and matched pair, and a little fanfare plays for a new
+  badge. The sounds are made in the browser (no audio files). Students can switch them off in the menu (*Sounds*).
 
 Progress is saved in the browser's `localStorage`, separately for each login.
 
