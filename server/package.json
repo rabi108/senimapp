@@ -1,0 +1,20 @@
+{
+  "name": "senim-tutor-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend for Senim Space Terms: keeps the OpenAI API key on the server (Cloudflare Worker).",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test test/*.test.mjs",
+    "build-materials": "node scripts/build-materials.mjs",
+    "roster": "node scripts/roster.mjs"
+  },
+  "dependencies": {
+    "openai": "7.32.0"
+  },
+  "devDependencies": {
+    "wrangler": "4.149.0"
+  }
+}

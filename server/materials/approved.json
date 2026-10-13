@@ -1,0 +1,8 @@
+{
+  "_comment": "Only documents listed here are used by the AI tutor. To approve a new document, add its file to server/materials/ and list it below, then run: npm run build-materials",
+  "documents": [
+    { "file": "reader-ch1-3.md", "title": "Reader: What's in Our Universe? (Ch. 1-3)", "cite": "Reader" },
+    { "file": "tg-vocabulary.md", "title": "Teacher Guide vocabulary (Lessons 1-3)", "cite": "Teacher Guide" },
+    { "file": "anthology-glossary.md", "title": "Astronomy Anthology glossary", "cite": "Anthology glossary" }
+  ]
+}

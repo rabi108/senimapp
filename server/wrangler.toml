@@ -1,0 +1,67 @@
+name = "senim-tutor-server"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# The tutor page (space-terms/index.html) is bundled into the Worker and served at "/",
+# so the browser talks to /api/... on the same site.
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = false
+
+# Counters (questions per student per day, monthly spending, failed logins) and the
+# cached embeddings index. No question text, answers or audio are stored.
+[[durable_objects.bindings]]
+name = "LEDGER"
+class_name = "Ledger"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Ledger"]
+
+# Request logs (errors only contain status codes and masked messages; no question text).
+[observability]
+enabled = true
+
+# Limits and settings. Change them here and redeploy (npm run deploy).
+[vars]
+CHAT_MODEL = "gpt-5.4-nano"
+REASONING_EFFORT = "none"
+EMBED_MODEL = "text-embedding-3-small"
+EMBED_DIMENSIONS = "512"
+MAX_AI_QUESTIONS_PER_DAY = "20"   # per student; other questions are answered by the free offline tutor
+MAX_OUTPUT_TOKENS = "600"         # answer + translation
+MAX_QUESTION_CHARS = "400"
+MONTHLY_BUDGET_USD = "18"         # hard stop; the app falls back to the offline tutor after this
+TOP_K = "4"                       # excerpts sent to the model per question
+MIN_SIMILARITY = "0.25"           # below this, the question is declined without calling the model
+SCHOOL_TIME_ZONE = "Asia/Almaty"
+# Voice (set VOICE_ENABLED = "false" to turn voice off; text tutoring keeps working)
+VOICE_ENABLED = "true"
+STT_MODEL = "gpt-4o-mini-transcribe"
+TTS_MODEL = "gpt-4o-mini-tts"
+TTS_VOICE = "coral"
+MAX_AUDIO_SECONDS = "15"            # longest voice question
+MAX_AUDIO_BYTES = "600000"
+MAX_VOICE_QUESTIONS_PER_DAY = "8"   # per student
+MAX_TTS_PER_DAY = "3"               # AI-voice answers per student; after that the free device voice is used
+TTS_MAX_CHARS = "600"
+TTS_BUDGET_USD = "3"                # monthly cap for the AI voice (also counts toward MONTHLY_BUDGET_USD)
+PRICE_STT_AUDIO_INPUT_PER_M = "1.25"
+PRICE_STT_TEXT_INPUT_PER_M = "1.25"
+PRICE_STT_OUTPUT_PER_M = "5"
+PRICE_STT_PER_MIN = "0.003"         # used only if the API reports duration instead of tokens
+PRICE_TTS_TEXT_INPUT_PER_M = "0.60"
+PRICE_TTS_PER_MIN = "0.015"         # estimate; speech length is estimated from the text
+# USD per 1M tokens, used to track spending. Check https://openai.com/api/pricing and update.
+PRICE_INPUT_PER_M = "0.20"
+PRICE_CACHED_INPUT_PER_M = "0.02"
+PRICE_OUTPUT_PER_M = "1.25"
+PRICE_EMBED_PER_M = "0.02"
+
+# Secrets are NOT set here. Set them with `npx wrangler secret put NAME`:
+#   OPENAI_API_KEY  - your OpenAI key
+#   SESSION_SECRET  - random string used to sign sign-in sessions
+#   ROSTER_JSON     - logins with hashed codes, created by `npm run roster -- --upload`
+# For local development, copy .dev.vars.example to .dev.vars (git-ignored).

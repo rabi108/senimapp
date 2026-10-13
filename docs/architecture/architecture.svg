@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 1000" width="1440" height="1000" font-family="Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+  <title id="t">Senim Space Terms: system architecture</title>
+  <desc id="d">Dashed arrows are configuration flows; solid arrows are requests between layers at run time. Numbers match the caption.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1d1d1f"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#555"/></marker>
+    <g id="doc"><path d="M0 0 H46 L62 16 V80 H0 Z" fill="#fff" stroke="#1d1d1f" stroke-width="2.5"/><path d="M46 0 V16 H62" fill="none" stroke="#1d1d1f" stroke-width="2.5"/><path d="M10 28 H52 M10 38 H52 M10 48 H52 M10 58 H52 M10 68 H40" stroke="#1d1d1f" stroke-width="2.5"/></g>
+    <g id="person"><circle cx="22" cy="14" r="11" fill="#fff" stroke="#1d1d1f" stroke-width="2.2"/><path d="M4 50 C4 32 40 32 40 50 Z" fill="#fff" stroke="#1d1d1f" stroke-width="2.2"/><rect x="30" y="34" width="20" height="18" rx="2" fill="#fff" stroke="#1d1d1f" stroke-width="2"/><path d="M34 40 H46 M34 45 H44" stroke="#1d1d1f" stroke-width="1.6"/><path d="M0 38 L-10 54" stroke="#1d1d1f" stroke-width="2.2"/></g>
+    <g id="num"><circle r="19" fill="#23395d"/><circle r="15.5" fill="none" stroke="#fff" stroke-width="1.5"/></g>
+  </defs>
+  <rect width="1440" height="1000" fill="#fff"/>
+
+  <!-- ===== (1) Instructor + configuration documents ===== -->
+  <use href="#person" x="300" y="70"/>
+  <text x="322" y="150" font-size="27" text-anchor="middle">Instructor</text>
+  <use href="#num" x="300" y="48"/><text x="300" y="57" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">1</text>
+
+  <use href="#doc" x="470" y="48"/>
+  <text x="501" y="160" font-size="21" text-anchor="middle">Approved</text>
+  <text x="501" y="185" font-size="21" text-anchor="middle">materials</text>
+  <use href="#doc" x="640" y="48"/>
+  <text x="671" y="160" font-size="21" text-anchor="middle">Logins &amp;</text>
+  <text x="671" y="185" font-size="21" text-anchor="middle">limits</text>
+  <path d="M370 92 H460 M542 92 H630" stroke="#1d1d1f" stroke-width="3" stroke-dasharray="12 10" fill="none"/>
+  <path d="M712 92 H880" stroke="#1d1d1f" stroke-width="3" stroke-dasharray="12 10" fill="none" marker-end="url(#a)"/>
+
+  <!-- ===== (2) GitHub repo + build ===== -->
+  <rect x="890" y="40" width="300" height="110" rx="12" fill="#fff" stroke="#1d1d1f" stroke-width="3"/>
+  <text x="1040" y="84" font-size="27" text-anchor="middle">GitHub repository</text>
+  <text x="1040" y="116" font-size="18" text-anchor="middle" fill="#444">code · cited excerpts · settings</text>
+  <use href="#num" x="1212" y="44"/><text x="1212" y="53" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">2</text>
+  <path d="M1040 150 V214 H770 V350" stroke="#1d1d1f" stroke-width="3" stroke-dasharray="12 10" fill="none" marker-end="url(#a)"/>
+  <text x="905" y="206" font-size="18" text-anchor="middle">wrangler deploy</text>
+
+  <!-- ===== (3) Secrets ===== -->
+  <rect x="1170" y="226" width="250" height="96" rx="10" fill="#fff" stroke="#1d1d1f" stroke-width="2.5" stroke-dasharray="7 6"/>
+  <text x="1295" y="258" font-size="18" text-anchor="middle" font-weight="700">Cloudflare secrets</text>
+  <text x="1295" y="284" font-size="15" text-anchor="middle">OPENAI_API_KEY</text>
+  <text x="1295" y="306" font-size="13.5" text-anchor="middle">SESSION_SECRET · ROSTER_JSON</text>
+  <path d="M1170 274 H860 V350" stroke="#1d1d1f" stroke-width="3" stroke-dasharray="12 10" fill="none" marker-end="url(#a)"/>
+  <text x="1010" y="264" font-size="18" text-anchor="middle">KEY SECRET (server only)</text>
+  <use href="#num" x="1418" y="228"/><text x="1418" y="237" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">3</text>
+
+  <!-- ===== Students ===== -->
+  <g transform="translate(40 470)">
+    <rect x="16" y="0" width="118" height="78" rx="4" fill="#fff" stroke="#1d1d1f" stroke-width="3"/>
+    <rect x="26" y="9" width="98" height="60" fill="#fff" stroke="#1d1d1f" stroke-width="1.5"/>
+    <path d="M0 84 H150 L142 94 H8 Z" fill="#fff" stroke="#1d1d1f" stroke-width="3"/>
+    <rect x="150" y="-44" width="48" height="86" rx="7" fill="#fff" stroke="#1d1d1f" stroke-width="3"/>
+    <rect x="157" y="-34" width="34" height="62" fill="#fff" stroke="#1d1d1f" stroke-width="1.5"/>
+  </g>
+  <text x="128" y="612" font-size="27" text-anchor="middle">Students</text>
+  <text x="128" y="640" font-size="17" text-anchor="middle" fill="#444">text · voice · kk / ru / en</text>
+
+  <!-- ===== Tutor web app (browser) ===== -->
+  <rect x="280" y="360" width="260" height="300" rx="14" fill="#fff" stroke="#1d1d1f" stroke-width="3"/>
+  <text x="410" y="408" font-size="27" text-anchor="middle">Tutor web app</text>
+  <text x="410" y="438" font-size="18" text-anchor="middle" fill="#444">(in the browser)</text>
+  <g font-size="17" fill="#1d1d1f">
+    <text x="300" y="484">• 3 lessons, games, quizzes</text>
+    <text x="300" y="512">• Socratic engine (offline)</text>
+    <text x="300" y="540">• glossary kk / ru, translate</text>
+    <text x="300" y="568">• mic → editable transcript</text>
+    <text x="300" y="596">• 🔊 Listen (AI-voice label)</text>
+    <text x="300" y="624">• offline fallback</text>
+  </g>
+
+  <!-- ===== (4) Cloudflare Worker ===== -->
+  <rect x="640" y="360" width="300" height="300" rx="14" fill="#fff" stroke="#1d1d1f" stroke-width="3"/>
+  <text x="790" y="402" font-size="27" text-anchor="middle">Cloudflare Worker</text>
+  <text x="790" y="432" font-size="18" text-anchor="middle" fill="#444">(hosted, serverless)</text>
+  <use href="#num" x="640" y="364"/><text x="640" y="373" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">4</text>
+  <g font-size="17" fill="#1d1d1f">
+    <text x="660" y="478">• serves page + /api</text>
+    <text x="660" y="506">• sign-in, sessions, roles</text>
+    <text x="660" y="534">• RAG: translate → embed →</text>
+    <text x="676" y="556">retrieve → answer → check</text>
+    <text x="660" y="584">• speech-to-text / voice</text>
+    <text x="660" y="612">• limits &amp; spend tracking</text>
+    <text x="660" y="640">• teacher endpoints</text>
+  </g>
+
+  <!-- ===== (5) OpenAI API ===== -->
+  <rect x="1040" y="360" width="360" height="300" rx="14" fill="#fff" stroke="#1d1d1f" stroke-width="3"/>
+  <use href="#num" x="1220" y="404"/><text x="1220" y="413" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">5</text>
+  <text x="1220" y="460" font-size="29" text-anchor="middle">OpenAI API</text>
+  <g font-size="17" fill="#1d1d1f">
+    <text x="1062" y="510">• text-embedding-3-small (search)</text>
+    <text x="1062" y="540">• gpt-5.4-nano (answers, translate)</text>
+    <text x="1062" y="570">• gpt-4o-mini-transcribe (voice in)</text>
+    <text x="1062" y="600">• gpt-4o-mini-tts (voice out)</text>
+  </g>
+  <text x="1220" y="638" font-size="15" text-anchor="middle" fill="#444">answers: store: false · no recordings kept</text>
+
+  <!-- ===== run-time arrows (solid) ===== -->
+  <g stroke="#1d1d1f" stroke-width="3" fill="none">
+    <path d="M240 500 H270" marker-end="url(#a)"/><path d="M270 540 H240" marker-end="url(#a)"/>
+    <path d="M540 490 H630" marker-end="url(#a)"/><path d="M630 530 H550" marker-end="url(#a)"/>
+    <path d="M940 490 H1030" marker-end="url(#a)"/><path d="M1030 530 H950" marker-end="url(#a)"/>
+  </g>
+  <text x="585" y="474" font-size="15" text-anchor="middle">HTTPS</text>
+  <text x="590" y="556" font-size="15" text-anchor="middle">JSON · audio</text>
+  <text x="985" y="474" font-size="15" text-anchor="middle">API</text>
+
+  <!-- ===== (6) Ledger (Durable Object) ===== -->
+  <rect x="640" y="740" width="300" height="160" rx="14" fill="#fff" stroke="#1d1d1f" stroke-width="3"/>
+  <text x="790" y="780" font-size="25" text-anchor="middle">Ledger (SQLite)</text>
+  <text x="790" y="806" font-size="16" text-anchor="middle" fill="#444">Durable Object</text>
+  <g font-size="16"><text x="658" y="836">• questions per student per day</text><text x="658" y="860">• spend per month · failed logins</text><text x="658" y="884">• progress · cached embeddings</text></g>
+  <use href="#num" x="640" y="744"/><text x="640" y="753" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">6</text>
+  <g stroke="#1d1d1f" stroke-width="3" fill="none"><path d="M770 660 V730" marker-end="url(#a)"/><path d="M810 730 V670" marker-end="url(#a)"/></g>
+
+  <!-- ===== (7) Stay-on-topic / grounding policy ===== -->
+  <g transform="translate(1060 730)">
+    <path d="M0 0 H62 L84 22 V150 H0 Z" fill="#fff" stroke="#1d1d1f" stroke-width="3"/><path d="M62 0 V22 H84" fill="none" stroke="#1d1d1f" stroke-width="3"/>
+    <rect x="22" y="72" width="40" height="34" rx="5" fill="#1d1d1f"/><path d="M30 72 V60 a12 12 0 0 1 24 0 V72" fill="none" stroke="#1d1d1f" stroke-width="5"/><circle cx="42" cy="87" r="4" fill="#fff"/>
+  </g>
+  <use href="#num" x="1180" y="748"/><text x="1180" y="757" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">7</text>
+  <text x="1172" y="800" font-size="24">“Answer only from</text>
+  <text x="1172" y="830" font-size="24">approved materials”</text>
+  <text x="1172" y="862" font-size="16" fill="#444">threshold · must cite · daily limits</text>
+  <text x="1172" y="884" font-size="16" fill="#444">$18 monthly stop · voice caps</text>
+  <path d="M1060 805 H1000 V700 H900 V670" stroke="#1d1d1f" stroke-width="3" stroke-dasharray="12 10" fill="none" marker-end="url(#a)"/>
+  <!-- small teacher icon next to policy, like the paper -->
+  <use href="#person" x="1000" y="830" transform="translate(-0 0) scale(1)"/>
+
+  <!-- ===== (8) Teacher view feedback loop ===== -->
+  <path d="M410 660 V940 H18 V92 H260" stroke="#555" stroke-width="3" stroke-dasharray="12 10" fill="none" marker-end="url(#ag)"/>
+  <use href="#num" x="18" y="300"/><text x="18" y="309" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">8</text>
+  <text x="40" y="975" font-size="18" fill="#333">teacher view: students' progress · AI spending · AI &amp; voice self-tests</text>
+
+  <!-- legend -->
+  <g font-size="16" fill="#333">
+    <path d="M1080 969 H1130" stroke="#1d1d1f" stroke-width="3" stroke-dasharray="10 8"/><text x="1140" y="975">configuration</text>
+    <path d="M1260 969 H1305" stroke="#1d1d1f" stroke-width="3" marker-end="url(#a)"/><text x="1314" y="975">run-time call</text>
+  </g>
+</svg>
